@@ -64,7 +64,7 @@ def nucleotid_arrays(path_to_directory):
         
     return nucleotid_train, nucleotid_val
 
-def _find_threashold(proba):
+def _find_threshold(proba):
     values, counts = np.unique(proba, return_counts=True)
     counts = counts.astype(float)
     counts /= np.sum(counts)
@@ -72,13 +72,13 @@ def _find_threashold(proba):
     limit = 0.0001
 
     if (counts < limit).any():
-        threashold = values[np.where(counts < limit)[0][0]]
+        threshold = values[np.where(counts < limit)[0][0]]
     else:
-        threashold = np.max(proba)
+        threshold = np.max(proba)
 
-    return threashold
+    return threshold
 
-def nuc_occupancy(path_to_file) :
+def nuc_occupancy(path_to_file, return_threshold=False) :
     """
        Creates two arrays containing the nucleosome occupancy in both train 
        and validation set.
@@ -90,6 +90,8 @@ def nuc_occupancy(path_to_file) :
 
         :param path_to_file: the path to the .csv file
         :type path_to_file: os path
+        :param return_threshold: if true only return the threshold used for
+        normalization.
 
         :Example:
 
@@ -119,9 +121,9 @@ def nuc_occupancy(path_to_file) :
         proba_train = np.append(proba_train, proba_)
 
     # renormalization of the data between 0 and 1
-    threashold = _find_threashold(proba_train)
-    proba_train[proba_train > threashold] =  threashold
-    proba_train /= float(threashold)
+    threshold = _find_threshold(proba_train)
+    proba_train[proba_train > threshold] =  threshold
+    proba_train /= float(threshold)
 
     proba_val = np.array(proba[proba.chr == 'chr' + str(val_chr[0])].value)
 
@@ -130,8 +132,8 @@ def nuc_occupancy(path_to_file) :
         proba_val = np.append(proba_val, proba_)
 
     # renormalization of the data between 0 and 1
-    proba_val[proba_val > threashold] =  threashold
-    proba_val /= float(threashold)
+    proba_val[proba_val > threshold] =  threshold
+    proba_val /= float(threshold)
 
     proba = np.append(proba_train, proba_val)
     bins = int(np.max(proba))
@@ -146,8 +148,11 @@ def nuc_occupancy(path_to_file) :
     
     for index, count in zip(unique[0], unique[1])[1:]:
         weights_train[digitize_train == index] = np.max(unique[1][1:])/(float(count))
-
-    return proba_train, weights_train, proba_val, weights_val
+    
+    if return_threshold:
+        return threshold
+    else:
+        return proba_train, weights_train, proba_val, weights_val
         
 def generator(path_to_directory, path_to_file, output_len=1,
               include_zeros = False, seq2seq = False):
