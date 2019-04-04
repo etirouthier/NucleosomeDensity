@@ -63,7 +63,21 @@ def nucleotid_arrays(path_to_directory):
             nucleotid_val = np.append(nucleotid_val, nucleotid_)
         
     return nucleotid_train, nucleotid_val
+
+def _find_threashold(proba):
+    values, counts = np.unique(proba, return_counts=True)
+    counts = counts.astype(float)
+    counts /= np.sum(counts)
     
+    limit = 0.0001
+
+    if (counts < limit).any():
+        threashold = values[np.where(counts < limit)[0][0]]
+    else:
+        threashold = np.max(proba)
+
+    return threashold
+
 def nuc_occupancy(path_to_file) :
     """
        Creates two arrays containing the nucleosome occupancy in both train 
@@ -96,7 +110,6 @@ def nuc_occupancy(path_to_file) :
     """
     train_chr = range(2,14)
     val_chr = range(14,16)
-    WINDOW = 1000
     
     proba = pd.read_csv(path_to_file ,sep = ',')
     proba_train = np.array(proba[proba.chr == 'chr' + str(train_chr[0])].value)
@@ -106,9 +119,9 @@ def nuc_occupancy(path_to_file) :
         proba_train = np.append(proba_train, proba_)
 
     # renormalization of the data between 0 and 1
-    for i in range(proba_train.shape[0]//WINDOW):
-        if np.max(proba_train[i*WINDOW : (i+1)*WINDOW]) != 0: 
-            proba_train[i*WINDOW : (i+1)*WINDOW] /= np.max(proba_train[i*WINDOW : (i+1)*WINDOW])
+    threashold = _find_threashold(proba_train)
+    proba_train[proba_train > threashold] =  threashold
+    proba_train /= float(threashold)
 
     proba_val = np.array(proba[proba.chr == 'chr' + str(val_chr[0])].value)
 
@@ -116,10 +129,9 @@ def nuc_occupancy(path_to_file) :
         proba_ = np.array(proba[proba.chr == 'chr' + str(i)].value)
         proba_val = np.append(proba_val, proba_)
 
-    # renormalisation of the data between 0 and 1
-    for i in range(proba_val.shape[0]//WINDOW):
-        if np.max(proba_val[i*WINDOW : (i+1)*WINDOW]) != 0: 
-            proba_val[i*WINDOW : (i+1)*WINDOW] /= np.max(proba_val[i*WINDOW : (i+1)*WINDOW])
+    # renormalization of the data between 0 and 1
+    proba_val[proba_val > threashold] =  threashold
+    proba_val /= float(threashold)
 
     proba = np.append(proba_train, proba_val)
     bins = int(np.max(proba))
