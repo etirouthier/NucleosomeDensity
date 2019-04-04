@@ -111,11 +111,6 @@ def main():
                                        'mae_cor': mae_cor})
     X_test, y_true = load_data(args.seq2seq)
 
-    # renormalisation of the data between 0 and 1
-    for i in range(y_true.shape[0]//WINDOW):
-        if np.max(y_true[i*WINDOW : (i+1)*WINDOW]) != 0: 
-            y_true[i*WINDOW : (i+1)*WINDOW] /= np.max(y_true[i*WINDOW : (i+1)*WINDOW])
-
     y_pred = model.predict(X_test)
     y_pred = y_pred.reshape((y_pred.shape[0]*y_pred.shape[1],))
     np.save(path_to_results, y_pred)
