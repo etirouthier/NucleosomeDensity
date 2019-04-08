@@ -33,6 +33,9 @@ def parse_arguments():
                         on the whole genome.""")
     parser.add_argument('-r', '--rna_seq',
                         help="""CSV file with the RNA seq landscape""")
+    parser.add_argument('-p', '--predicted_rnaseq', action='store_true',
+                        help="""If the rna_seq lanscape is the prediction of
+                        another CNN model""")
     return parser.parse_args()
 
 def load_data():
@@ -77,12 +80,13 @@ def load_data():
     
     rna_density = pd.read_csv(rna_file)
     rna_density = rna_density[rna_density.chr == 'chr16'].value.values
-
-    rna_density[rna_density > 0] = np.log(rna_density[rna_density > 0])
-    rna_density[rna_density < 0] = - np.log( -rna_density[rna_density < 0])
+    
+    if not args.predicted_rnaseq:
+        rna_density[rna_density > 0] = np.log(rna_density[rna_density > 0])
+        rna_density[rna_density < 0] = - np.log( -rna_density[rna_density < 0])
 
     rna_inputs = rolling_window(rna_density, window=(window_rna,))
-    rna_inputs = rna_inputs[half_wx - half_wx_rna + 1 : -half_wx + half_wx_rna]
+    rna_inputs = rna_inputs[half_wx - half_wx_rna : -half_wx + half_wx_rna - 1]
     rna_inputs  = rna_inputs.reshape(rna_inputs.shape[0], window_rna, 1)
     
     y_true = y_true[half_wx : -half_wx]
@@ -117,14 +121,16 @@ def main():
     ax.plot(y_pred, 'b', label='prediction')
     ax.plot(y_true, 'r', label='experimental')
     ax.legend()
-    ax2 = ax = fig.add_subplot(2,1,2)
+    ax2 = fig.add_subplot(2,1,2)
     ax2.hist(y_pred, bins=100, density=True,
              histtype='step', color='b', label='prediction')
     ax2.hist(y_true, bins=100, density=True,
              histtype='step', color='r', label='experimental')
     ax2.legend()
-    plt.title('Experimental and predicted occupancy' + \
-              'on chr 16 for model{}'.format(args.weight_file[6:]))
+    ax.set_title('Experimental and predicted occupancy' + \
+                 'on chr 16 for model{}'.format(args.weight_file[6:]))
+    ax2.set_title('Experimental and predicted distribution of score' + \
+                  'on chr 16 for model{}'.format(args.weight_file[6:]))
     plt.show()
 
 if __name__ == '__main__':

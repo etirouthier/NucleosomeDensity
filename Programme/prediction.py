@@ -21,7 +21,7 @@ from scipy.stats import pearsonr
 from MyModuleLibrary.array_modifier import rolling_window
 from MyModuleLibrary.mykeras.losses import correlate, mse_var, mae_cor
 from CustomModel.Models import model_dictionary
-from DataPipeline import nuc_occupancy
+from DataPipeline.generator import nuc_occupancy
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -125,14 +125,16 @@ def main():
     ax.plot(y_pred, 'b', label='prediction')
     ax.plot(y_true, 'r', label='experimental')
     ax.legend()
-    ax2 = ax = fig.add_subplot(2,1,2)
+    ax2 = fig.add_subplot(2,1,2)
     ax2.hist(y_pred, bins=100, density=True,
              histtype='step', color='b', label='prediction')
     ax2.hist(y_true, bins=100, density=True,
              histtype='step', color='r', label='experimental')
     ax2.legend()
-    plt.title('Experimental and predicted occupancy' + \
-              'on chr 16 for model{}'.format(args.weight_file[6:]))
+    ax.set_title('Experimental and predicted occupancy' + \
+                 'on chr 16 for model{}'.format(args.weight_file[6:]))
+    ax2.set_title('Experimental and predicted distribution of score' + \
+                  'on chr 16 for model{}'.format(args.weight_file[6:]))
     plt.show()
 
 if __name__ == '__main__':
