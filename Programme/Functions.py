@@ -8,8 +8,10 @@ Created on Wed Mar 20 14:28:40 2019
 
 import numpy as np
 import pandas as pd
+from scipy.signal import find_peaks
 
-def position_gene(position, half_wx, y_true, ordering = True) :
+
+def position_gene(position, half_wx, y_true, ordering=True) :
     ''' 
         Position of genes, potentially ordered by size of genes if needed.
         The positions are adapted for the predicted signal.
@@ -55,7 +57,7 @@ def position_gene(position, half_wx, y_true, ordering = True) :
 
         position_start = np.delete(position_start, position_start.shape[0]-1,0)
     
-    if ordering == True :
+    if ordering:
         gene_size = position_stop - position_start
         order = np.argsort(gene_size)
 
@@ -141,3 +143,128 @@ def NFR_position(y, half_wx, position):
     stop_df['strand'] = '-'
                 
     return start_df.append(stop_df)
+
+def heat_map(y, y_true, position, half_wx, feature) :
+    """
+        Creates the heat-map of prediction with several possible alignments.
+
+        The heat-map is a matrix made of several vector. A vector is the
+        nucleosome occupancy in a region of 500 bp around a specific feature
+        passed in input of the function. The heat-map is then all the vector of
+        nucleosome occupancy around all the specific feature in the chromosome.
+        Those features can be a TSS, the first nucleosome after the NFR
+        detected in the experimental nucleosome occpancy or the first
+        nucleosome after the NFR detected using the predicted nuc occupancy.
+
+        Args:
+            y: the nucleosome occupancy on which the heat-map will be calculated
+            y_true: the experimental nucleosome occupancy
+            position: pd.DataFrame with Start, Stop, Strand for every genes.
+            half_wx: int, half size of the window used to predict the
+            nucleosome landscape.
+            feature: the feature on which the alignment will be performed.
+            Takes values between 'tss', 'nuc_true', 'nuc_pred' (corresponding
+            respectively to TSS, the experimental first nuc and the predicted
+            one)
+        Return:
+            matrix: the heat-map.
+    """
+    X = np.copy(y.reshape((y.shape[0],)))
+    X = X / np.mean(X)
+    
+    Y = np.copy(y_true.reshape((y_true.shape[0],)))
+    Y = Y / np.mean(Y)
+
+    length = 1000
+    half_len = length // 2
+    lag = 500
+    height = 0.2
+
+    if feature == 'nuc_pred':
+        df_nfr = NFR_position(y, half_wx, position)
+        
+        nfr_plus = df_nfr[df_nfr.strand == '+'].nfr_pos.values
+        nfr_minus = df_nfr[df_nfr.strand == '-'].nfr_pos.values
+        
+        matrix = np.array([X[nfr_plus[0] - half_len : nfr_plus[0] + length]])
+
+        for i in nfr_plus:
+            if  find_peaks(X[i : i + lag],
+                           height=height,
+                           distance=150)[0].any():
+                offset = find_peaks(X[i : i + lag],
+                                    height=height,
+                                    distance=150)[0][0]
+                matrix_ = np.array([X[i + offset - half_len : i + offset + length]])
+
+                if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+        
+        for i in nfr_minus:
+            if  find_peaks(X[i - lag : i ],
+                           height=height,
+                           distance=150)[0].any():
+                offset = find_peaks(X[i - lag : i ],
+                                    height = height,
+                                    distance = 150)[0][-1] - lag    
+                matrix_ = X[i + offset - length : i + offset + half_len]
+                matrix_ = matrix_[::-1]
+                matrix_ = np.array([matrix_])
+
+                if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+    
+    elif feature == 'nuc_true':
+        df_nfr = NFR_position(y_true, half_wx, position)
+        
+        nfr_plus = df_nfr[df_nfr.strand == '+'].nfr_pos.values
+        nfr_minus = df_nfr[df_nfr.strand == '-'].nfr_pos.values
+        
+        matrix = np.array([X[nfr_plus[0] - half_len : nfr_plus[0] + length]])
+
+        for i in nfr_plus:
+            if  find_peaks(Y[i : i + lag],
+                           height=height,
+                           distance=150)[0].any():
+                offset = find_peaks(Y[i : i + lag],
+                                    height=height,
+                                    distance=150)[0][0]
+                matrix_ = np.array([X[i + offset - half_len : i + offset + length]])
+
+                if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+        
+        for i in nfr_minus:
+            if  find_peaks(Y[i - lag : i ],
+                           height=height,
+                           distance=150)[0].any():
+                offset = find_peaks(Y[i - lag : i ],
+                                    height = height,
+                                    distance = 150)[0][-1] - lag    
+                matrix_ = X[i + offset - length : i + offset + half_len]
+                matrix_ = matrix_[::-1]
+                matrix_ = np.array([matrix_])
+
+                if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+
+    elif feature == 'tss':
+        position_start_, position_stop_, Start, Stop = \
+        position_gene(position, half_wx, y_true, ordering=True)
+        matrix = np.array([X[Start[1] - half_len : Start[1] + length]])
+
+        for i in Start[2:] :
+            matrix_ = np.array([X[i - half_len : i + length]])
+
+            if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+
+        for i in Stop :
+            matrix_ = X[i - length : i + half_len]
+            matrix_ = matrix_[::-1]
+            matrix_ = np.array([matrix_])
+
+            if matrix.shape[1] == matrix_.shape[1]:
+                    matrix = np.append(matrix_, matrix, axis=0)
+
+    return matrix

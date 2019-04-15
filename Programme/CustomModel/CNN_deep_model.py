@@ -6,55 +6,84 @@ Created on Mon Mar  4 11:17:50 2019
 @author: routhier
 """
 
-from keras.models import Sequential
-from keras.layers import Dropout,Flatten, BatchNormalization
+from keras.models import Model
+from keras.layers import Dropout, Flatten, BatchNormalization, Add
 from keras.layers import Dense, Conv2D, MaxPooling2D
+from keras import Input
+
 
 def cnn_deep_model() :
     """
-        Create a convolutional model with convolutional layers before a final 
-        dense a layer with one node used to make the final prediction.
-        
-        ..notes: the precision of the prediction does not depend strongly with the architecture.
+        Create a ResNet to predict the nucleosome density along the genome.
     """
-    window = 2001
+    WINDOW = 2001
     num_classes = 1
+
+    dna_input = Input(shape=(WINDOW, 4, 1), name='dna_sequence')
+
+    x = Conv2D(48, kernel_size=(3,4),
+                   activation='relu',
+                   padding='valid')(dna_input)
+    x = Dropout(0.2)(x)
+    x = BatchNormalization()(x)
     
-    fashion_model = Sequential()
+    x = Conv2D(64, kernel_size=(3,1),
+                   activation='relu',
+                   padding='same')(x)
+    x = Dropout(0.2)(x)
+    x = MaxPooling2D((2,1),padding='same')(x)
+    x = BatchNormalization()(x)
     
-    fashion_model.add(Conv2D(64, kernel_size=(12,4),
-                             activation='relu',
-                             input_shape=(window,4,1),
-                             padding='valid'))
-    fashion_model.add(MaxPooling2D((2,1),padding='same'))
-    fashion_model.add(BatchNormalization())
-    fashion_model.add(Dropout(0.2))
-
-    fashion_model.add(Conv2D(32, kernel_size=(8,1),
-                             activation='relu',
-                             padding='same'))
-    fashion_model.add(BatchNormalization())
-    fashion_model.add(Dropout(0.2))
-
-    fashion_model.add(Conv2D(32, kernel_size=(8,1),
-                             activation='relu',
-                             padding='same',
-                             dilation_rate = (2, 1)))
-    fashion_model.add(BatchNormalization())
-    fashion_model.add(Dropout(0.2))
-
-    fashion_model.add(Conv2D(32, kernel_size=(8,1),
-                             activation='relu',
-                             padding='same',
-                             dilation_rate = (4, 1)))
-    fashion_model.add(MaxPooling2D((2,1),padding='same'))
-    fashion_model.add(BatchNormalization())
-    fashion_model.add(Dropout(0.2))
+    fx = Conv2D(64, kernel_size=(3,1),
+                   activation='relu',
+                   padding='same')(x)
+    fx = Dropout(0.2)(fx)
+    fx = BatchNormalization()(fx)
+    fx = Conv2D(64, kernel_size=(3,1),
+                   activation='relu',
+                   padding='same')(fx)
+    fx = Dropout(0.2)(fx)
+    x = Add()([fx, x])
+    x = MaxPooling2D((2,1),padding='same')(fx)
+    x = BatchNormalization()(x)
     
-    fashion_model.add(Flatten()) 
+    fx = Conv2D(64, kernel_size=(7,1),
+                   activation='relu',
+                   padding='same')(x)
+    fx = BatchNormalization()(fx)
+    fx = Dropout(0.2)(fx)
+    fx = Conv2D(64, kernel_size=(7,1),
+                   activation='relu',
+                   padding='same')(fx)
+    fx = Dropout(0.2)(fx)
+    x = Add()([fx, x])
+    x = MaxPooling2D((2,1),padding='same')(fx)
+    x = BatchNormalization()(x)
     
-    fashion_model.add(Dense(64, activation = 'relu'))
+    fx = Conv2D(64, kernel_size=(12,1),
+                   activation='relu',
+                   padding='same')(x)
+    fx = BatchNormalization()(fx)
+    fx = Dropout(0.2)(fx)
+    fx = Conv2D(64, kernel_size=(12,1),
+                   activation='relu',
+                   padding='same')(fx)
+    fx = BatchNormalization()(fx)
+    fx = Dropout(0.2)(fx)
+    fx = Conv2D(64, kernel_size=(20,1),
+                   activation='relu',
+                   padding='same')(x)
+    fx = BatchNormalization()(fx)
+    fx = Dropout(0.2)(fx)
+    x = Add()([fx, x])
+    x = MaxPooling2D((2,1),padding='same')(fx)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    
+    x = Flatten()(x)
+    x = Dense(16, activation = 'relu')(x)
 
-    fashion_model.add(Dense(num_classes, activation='relu'))
+    output = Dense(num_classes, activation='relu')(x)
+    fashion_model = Model([dna_input], output)
 
-    return fashion_model 
+    return fashion_model
