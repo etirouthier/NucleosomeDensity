@@ -21,13 +21,13 @@ NucleosomeDensity/Programme$ >>> python training.py -d DNA_directory -f nuc_occu
 
 NucleosomeDensity/Programme$ >>> python prediction.py -d DNA_directory -f nuc_occupancy_file.csv -w model_weights_file -m model_name -s
 
--**Predicting the single mutation effect:** 
+- **Predicting the single mutation effect:** 
 
 NucleosomeDensity/Programme$ >>> python mutazome.py -l window_length
 
 ### What are the arguments parsed ?
 
-- **-d DNA_directory:** a directory in *Programme/seq_chr* that contains the DNA sequence. One hdf5 file per chromosome named as chr\d+\.hdf5.
+- **-d DNA_directory:** a directory in *Programme/seq_chr* that contains the DNA sequence. One hdf5 file per chromosome named as *chr\d+\.hdf5*.
 
 - **-f nuc_occupancy_file.csv:** a csv file in *Programme/Start_data* with the columns named as chr, pos (facultative) and value. The chr column stand for the chromosome number, pos for the position of the nucleotid in its chromosome and value for the nucleosome occupancy.
 
