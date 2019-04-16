@@ -7,6 +7,7 @@ Created on Thu Jan 10 09:34:19 2019
 """
 import os
 import argparse
+import re
 
 import keras.backend as K
 import tensorflow as tf
@@ -54,11 +55,12 @@ def main():
     path_to_directory = os.path.join(path_to_directory,
                                      'seq_chr_sacCer3',
                                      args.directory)
-    
+
     num_epochs = 200
-    
-    path_to_output_file = os.path.join('/users/invites/routhier/Documents/Projet_nucleosomes/Results_nucleosome', args.output_file )
-    
+
+    assert re.match(r'weights_.+\.hdf5', os.path.basename(args.output_file))
+    path_to_output_file = os.path.join('../Results_nucleosome', args.output_file)
+
     if args.seq2seq :
         model, output_len = model_dictionary()[args.model]
         generator_train, number_of_set_train, \
@@ -80,7 +82,7 @@ def main():
         model.compile(optimizer='adam',
                       loss=mae_cor,
                       metrics=['mse', correlate])
-    
+
     checkpointer = ModelCheckpoint(filepath=path_to_output_file,
                                    monitor='val_loss',
                                    verbose=0, 
@@ -100,7 +102,7 @@ def main():
                         validation_data = generator_val, 
                         validation_steps = 200, 
                         callbacks = [checkpointer, early, tensorboard])
-    
+
 
 if __name__ == '__main__':
     main()
