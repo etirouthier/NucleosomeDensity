@@ -50,5 +50,5 @@ NucleosomeDensity/Programme$ >>> python mutazome.py -l window_length
 
 ### How could I find my results ?
 
-- the weights of the trained model will be register in *Results_nucleosomes* with the name parsed as arguments (that should be *weights_.+\.hdf5*).
+- the weights of the trained model will be register in *Results_nucleosomes* with the name parsed as arguments (that should match *weights_.+\.hdf5*).
 - the prediction on chromosome 16 are register in *Results_nucleosomes* with the name *y_pred_.+\.npy* (with *.+* behind the same as the one in the name of the file that contains the weights of the model).
