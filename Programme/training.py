@@ -46,7 +46,8 @@ def prepare_session():
 
 def main():
     args = parse_arguments()
-    path_to_directory = os.path.dirname(os.path.dirname(args.directory)) # we get the path conducting to seq_chr_sacCer3
+    path_to_directory = os.path.dirname(__file__)
+    # we get the path conducting to seq_chr_sacCer3
     path_to_tensorboard = os.path.join(path_to_directory, 'Tensorboard')
     
     path_to_file = os.path.join(path_to_directory,
