@@ -52,7 +52,7 @@ def load_data(seq2seq=False, args=None):
     path_to_file = os.path.join(path_to_directory,
                                 'seq_chr_sacCer3',
                                 args.directory,
-                                'chr14.hdf5')
+                                'chr16.hdf5')
 
     f = h5py.File(path_to_file,'r')
     nucleotid = np.array(f[f.keys()[0]])
@@ -66,9 +66,9 @@ def load_data(seq2seq=False, args=None):
     proba_file = os.path.join(proba_directory, 'Start_data', args.file)
 
     proba = pd.read_csv(proba_file)
-    y_true = proba[proba.chr == 'chr14'].value.values
+    y_true = proba[proba.chr == 'chr16'].value.values
     threshold = nuc_occupancy(proba_file, return_threshold=True)
-    
+
     if seq2seq:
         _, output_len = model_dictionary()[args.model]
 
@@ -91,16 +91,16 @@ def load_data(seq2seq=False, args=None):
                              X_slide.shape[3],
                              1)
         y_true = y_true[half_wx : -half_wx]
-    
+
     y_true /= float(threshold)
-    
+
     return X_, y_true
 
 def main(command_line_arguments=None):
     arguments = parse_arguments(args=command_line_arguments)
     results_path = os.path.join(os.path.dirname(__file__),
                                 '../Results_nucleosome')
-    
+
     path_to_weight = os.path.join(results_path,
                                   os.path.basename(os.path.dirname(arguments.weight_file)),
                                   os.path.basename(arguments.weight_file))
@@ -140,19 +140,3 @@ def main(command_line_arguments=None):
 
 if __name__ == '__main__':
     main()
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
