@@ -43,7 +43,7 @@ def load_data():
 
     window_nuc = 2001
     half_wx = window_nuc // 2
-    window_rna = 250
+    window_rna = 10
     half_wx_rna = window_rna // 2
     args = parse_arguments()
     path_to_directory = os.path.dirname(os.path.dirname(args.directory)) 
@@ -101,7 +101,7 @@ def main():
     path_to_weight = os.path.join(results_path, args.weight_file)
     path_to_results = os.path.join(results_path,
                                    os.path.dirname(args.weight_file),
-                                   'y_pred' + os.path.basename(args.weight_file)[6 : -5])
+                                   'y_pred' + os.path.basename(args.weight_file)[7 : -5])
 
     model = load_model(path_to_weight,
                        custom_objects={'correlate': correlate,

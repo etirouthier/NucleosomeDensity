@@ -36,8 +36,8 @@ def nucleotid_arrays(path_to_directory):
         ..notes:: train set and validation set are respectively (chr 2 to 
         chr 13) and (chr 14, chr 15)
     """
-    train_chr = range(2,14)
-    val_chr = range(14,16)
+    train_chr = range(1, 14)
+    val_chr = range(14, 16)
 
     for i in train_chr: 
         path_to_file = os.path.join(path_to_directory, 'chr' + str(i) + '.hdf5')
@@ -111,8 +111,8 @@ def nuc_occupancy(path_to_file, return_threshold=False) :
         ..notes:: train set and validation set are respectively (chr 2 to 
         chr 13) and (chr 14, chr 15).
     """
-    train_chr = range(2,14)
-    val_chr = range(14,16)
+    train_chr = range(1, 14)
+    val_chr = range(14, 16)
 
     proba = pd.read_csv(path_to_file ,sep = ',')
     proba_train = np.array(proba[proba.chr == 'chr' + str(train_chr[0])].value)

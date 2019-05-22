@@ -11,6 +11,20 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 
+def calculate_nrl(tss_occupancy):
+    """
+        Calculate the NRL from the mean nucleosome occupancy in TSS region.
+        
+        Args:
+            tss_occupancy: numpy array with the mean occupancy in TSS region
+        Return:
+            A scalar corresponding to the NRL
+    """
+    peaks = find_peaks(np.mean(tss_occupancy, axis=0), height = 0.2, distance = 130)[0]
+    peaks = peaks[peaks > 480]
+    nrl = np.polyfit(np.arange(1, 6, 1), peaks[:5], 1)[0]
+    return nrl
+    
 def position_gene(position, half_wx, y_true, ordering=True) :
     ''' 
         Position of genes, potentially ordered by size of genes if needed.

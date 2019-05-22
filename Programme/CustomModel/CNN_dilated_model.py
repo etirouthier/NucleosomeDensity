@@ -7,7 +7,7 @@ Created on Mon Jan 21 14:50:33 2019
 """
 
 from keras.models import Model
-from keras.layers import Dropout, LeakyReLU, Concatenate
+from keras.layers import Dropout, LeakyReLU, Concatenate, BatchNormalization
 from keras.layers import Conv2D, Reshape, Input, MaxPooling2D
 import keras.backend as K
 
@@ -23,13 +23,13 @@ def cnn_dilated_model() :
         
     inputs = Input(shape=(WINDOW,4,1))
     
-    #max_pool_layer = MaxPooling2D((4,1),padding='same')
+    max_pool_layer = MaxPooling2D((4,1),padding='same')
     leaky_relu_layer = LeakyReLU(alpha=0.1)
     dropout_layer = Dropout(0.2)
     conv_layer_1 = Conv2D(64, kernel_size=(22,4),
                           activation='relu',
                           padding='valid')
-    conv_layer_2 = Conv2D(40, kernel_size=(6,1),
+    conv_layer_2 = Conv2D(32, kernel_size=(6,1),
                           activation='relu',
                           padding='same')
     conv_layer_3 = Conv2D(1, kernel_size=(1,1),
@@ -37,13 +37,14 @@ def cnn_dilated_model() :
                           padding='same')
     
     image = conv_layer_1(inputs)
+    image = BatchNormalization()(image)
     image = leaky_relu_layer(image)
-    #image = max_pool_layer(image)
+    image = max_pool_layer(image)
     image = dropout_layer(image)
     
     image = conv_layer_2(image)
     image = leaky_relu_layer(image)
-    #image = max_pool_layer(image)
+    image = max_pool_layer(image)
     new_image = dropout_layer(image)
 
     #dilated_conv_layer = Conv2D(40, kernel_size=(3,1),activation='relu',padding='same', dilation_rate = (1,1))

@@ -138,7 +138,7 @@ def generator(path_to_directory, path_to_file_rna, path_to_file_nuc,
             The generator which will be used by the keras model to train.
         """
         window = 2001
-        window_rna = 250
+        window_rna = 10
         number_of_set = positions.shape[0] // batch_size
         half_wx = int((window - 1) / 2.)
         half_rna = window_rna // 2
