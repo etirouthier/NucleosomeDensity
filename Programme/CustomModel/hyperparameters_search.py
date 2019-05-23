@@ -17,7 +17,7 @@ from hyperopt import Trials, STATUS_OK, tpe
 from hyperas import optim
 from hyperas.distributions import choice, uniform
 
-from Programme.DataPipeline.generator import generator
+from DataPipeline.generator import generator
 from MyModuleLibrary.mykeras.losses import correlate, mae_cor, mse_var
 
 
@@ -26,12 +26,11 @@ def data():
     Data providing function:
     """
     generator_train, number_of_set_train, \
-    generator_val, number_of_set_val = generator('../seq_chr_sacCer3/sacCer3',
-                                                 '../Start_data/proba_in_vivo.csv')
-    
+    generator_val, number_of_set_val = generator('seq_chr_sacCer3/sacCer3',
+                                                 'Start_data/proba_in_vivo.csv')
+
     return generator_train, number_of_set_train, \
     generator_val, number_of_set_val
-
 
 def create_model(generator_train, number_of_set_train,
                  generator_val, number_of_set_val):
@@ -43,30 +42,30 @@ def create_model(generator_train, number_of_set_train,
 
     fashion_model = Sequential()
 
-    fashion_model.add(Conv2D({{choice([8, 16, 32, 64, 128])}},
+    fashion_model.add(Conv2D({{choice([8, 16, 32, 64])}},
                              kernel_size=({{choice([2, 4, 8, 16, 32])}},4),
                              activation='relu',
                              input_shape=(window,4,1),
                              padding='valid'))
-    fashion_model.add(MaxPooling2D((choice([2, 3, 4]),1),padding='same'))
+    fashion_model.add(MaxPooling2D(({{choice([2, 3, 4])}},1),padding='same'))
     fashion_model.add(BatchNormalization())
     fashion_model.add(Dropout({{uniform(0, 1)}}))
 
-    fashion_model.add(Conv2D({{choice([8, 16, 32, 64, 128])}},
+    fashion_model.add(Conv2D({{choice([8, 16, 32, 64])}},
                              kernel_size=({{choice([2, 4, 8, 16, 32])}},1),
                              activation='relu',
                              padding='same'))
-    fashion_model.add(MaxPooling2D((choice([2, 3, 4]),1),padding='same'))
+    fashion_model.add(MaxPooling2D(({{choice([2, 3, 4])}},1),padding='same'))
     fashion_model.add(BatchNormalization())
     fashion_model.add(Dropout({{uniform(0, 1)}}))
     
     if {{choice(['add', 'not_add'])}} == 'add':
     
-        fashion_model.add(Conv2D({{choice([8, 16, 32, 64, 128])}},
+        fashion_model.add(Conv2D({{choice([8, 16, 32, 64])}},
                                  kernel_size=({{choice([2, 4, 8, 16, 32])}},1),
                                  activation='relu',
                                  padding='same'))
-        fashion_model.add(MaxPooling2D((choice([2, 3, 4]),1),padding='same'))
+        fashion_model.add(MaxPooling2D(({{choice([2, 3, 4])}},1),padding='same'))
         fashion_model.add(BatchNormalization())
         fashion_model.add(Dropout({{uniform(0, 1)}}))
 
