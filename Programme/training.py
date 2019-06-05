@@ -39,7 +39,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def prepare_session():
-    config = tf.ConfigProto( device_count = {'GPU': 1 , 'CPU': 8} ) 
+    config = tf.ConfigProto(device_count={'GPU': 1 , 'CPU': 8} ) 
     K.clear_session()
     sess = tf.Session(config=config) 
     K.set_session(sess)

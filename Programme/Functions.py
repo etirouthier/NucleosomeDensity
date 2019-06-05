@@ -9,7 +9,7 @@ Created on Wed Mar 20 14:28:40 2019
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
-
+from MyModuleLibrary.array_modifier import rolling_window
 
 def calculate_nrl(tss_occupancy):
     """
@@ -24,6 +24,36 @@ def calculate_nrl(tss_occupancy):
     peaks = peaks[peaks > 480]
     nrl = np.polyfit(np.arange(1, 6, 1), peaks[:5], 1)[0]
     return nrl
+
+def one_hot_encoder( nucleotid):
+    """
+        Take a nucleotid sequence and return the one-hot-encoded version.
+        
+        Args:
+            nucleotid: array corresponding to the DNA sequence shape = (len, 1)
+        returns:
+            res: the array one-hot-encoded, shape=(len, 4)
+    """
+    res = (np.arange(nucleotid.max()) == nucleotid[..., None]-1).astype(int)
+    res = res.reshape(res.shape[0], 4)
+    return res
+
+def process(nucleotid):
+    """
+        Take a numpy array corresponding to a DNA sequence and transform it so
+        that the model is able to make prediction on it.
+        
+        Args:
+            nucleotid: array corresponding to the DNA sequence shape = (len, 1)
+        return:
+            x_seq: array ready to be passed as input of a model to make
+            prediction. The shape is (len, 2001, 4, 1)
+    """
+    WX = 2001
+    x = one_hot_encoder(nucleotid)
+    x_slide = rolling_window(x, window=(WX, 4))
+    x_seq = x_slide.reshape(x_slide.shape[0], WX, 4, 1)
+    return x_seq
     
 def position_gene(position, half_wx, y_true, ordering=True) :
     ''' 

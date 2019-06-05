@@ -15,7 +15,7 @@ import os
 from keras.models import load_model
 
 from MyModuleLibrary.array_modifier import rolling_window
-from MyModuleLibrary.mykeras.losses import correlate, mse_var
+from MyModuleLibrary.mykeras.losses import correlate, mae_cor
 from prediction import main as pred
 
 def _makebatch(nuc_seq, pos, mutation, window):    
@@ -42,11 +42,15 @@ def _mutation_score(y_wilde, y_syn, pos, window):
 
 def _parse_arguments(args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l',
-                        '--length',
-                        help='''length of the window of the model used to 
-                        make prediction''')
-
+    parser.add_argument('-m',
+                        '--model',
+                        help = '''model with which the prediction will be made
+                        ''')
+    parser.add_argument('-d',
+                        '--directory',
+                        help = '''directory that contains the dna seq in hdf5.
+                        ''')
+  
     return parser.parse_args(args)
 
 def main(command_line_arguments=None):
@@ -62,46 +66,38 @@ def main(command_line_arguments=None):
     args = _parse_arguments(command_line_arguments)
     path_to_program = os.path.dirname(__file__)
     
-    model = load_model(os.path.join(path_to_program, '../Results_nucleosome/' + \
-                                    'Final_Results/weights_CNN_nucleosome_' + \
-                                    args.length + '_3_8_80_mse_var.hdf5'),
+    model = load_model(os.path.join(path_to_program,
+                                    '..',
+                                    'Results_nucleosome',
+                                    os.path.basename(args.model)),
                        custom_objects={'correlate' : correlate,
-                                       'mse_var' : mse_var})
+                                       'mae_cor' : mae_cor})
     
-    pred(['--weight_file', '/Final_Results/weights_CNN_nucleosome_' + \
-                     args.length + '_3_8_80_mse_var.hdf5', '--directory',
-                     'sacCer3', '--file', 'proba_normalized.csv', '--model',
-                     'cnn'])
+    pred(['--weight_file', os.path.basename(args.model), '--directory',
+          args.directory, '--file', 'proba_normalized.csv',
+          '--model', 'cnn'])
 
-    y_pred = np.load(os.path.join(path_to_program, '../Results_nucleosome/' + \
-                                    'Final_Results/y_pred_CNN_nucleosome_' + \
-                                    args.length + '_3_8_80_mse_var.hdf5'))
+    y_pred = np.load(os.path.join(path_to_program,
+                                  '..',
+                                  'Results_nucleosome',
+                                  'y_pred' + os.path.basename(args.model)[7 : -5]) + '.npy')
     
-    f = h5py.File(os.path.join(path_to_program,
-                               '/seq_chr_sacCer3/sacCer3/chr16.hdf5'), 'r')
+    f = h5py.File(os.path.join(path_to_program, 'seq_chr_sacCer3',
+                               args.directory, 'chr16.hdf5'), 'r')
     nucleotid = np.array(f[f.keys()[0]])
     f.close()
     
-    WINDOW = int(args.length)
+    WINDOW = 2001
     mutazome = np.zeros((nucleotid.shape[0], 4))
-    
-    plt.ion()
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    line_mut, = ax.plot([], [])
     
     for pos in range(WINDOW, nucleotid.shape[0] - WINDOW):
         if pos % 100 == 0:
             print 'Studying nucleotid : ' + str(pos)
             
-            np.save(os.path.join(path_to_program, '../Results_nucleosome/' + \
-                                 'mutazome_' + args.length + '.npy'), mutazome)
+            np.save(os.path.join(path_to_program, '..','Results_nucleosome',
+                                 'mutazome_' + os.path.basename(args.model)[7 : -5]),
+                                 mutazome)
             mut_score = np.sum(mutazome, axis=1)
-            line_mut.set_ydata(mut_score[ : pos + 100])
-            line_mut.set_xdata(np.arange(pos + 100))
-            ax.set_ylim(-0.1, np.max(mut_score[ : pos]) + 0.1)
-            ax.set_xlim(0, pos + 100)
-            fig.canvas.draw()            
 
         for mutation in [1, 2, 3, 4]:
             x_syn = _makebatch(nucleotid, pos, mutation, WINDOW)

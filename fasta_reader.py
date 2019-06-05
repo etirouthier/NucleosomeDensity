@@ -32,6 +32,7 @@ def _converter():
     dconv["C"] = 4
     dconv["c"] = 4
     dconv["K"] = 0
+    dconv["f"] = 0
     dconv["M"] = 0
     dconv["R"] = 0
     dconv["Y"] = 0

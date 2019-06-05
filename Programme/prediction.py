@@ -92,6 +92,7 @@ def load_data(seq2seq=False, args=None):
                              1)
         y_true = y_true[half_wx : -half_wx]
 
+    y_true /= np.max(y_true) * 1.5
     y_true /= float(threshold)
 
     return X_, y_true
@@ -136,7 +137,7 @@ def main(command_line_arguments=None):
                  'on chr 16 for model{}'.format(arguments.weight_file[6:]))
     ax2.set_title('Experimental and predicted distribution of score' + \
                   'on chr 16 for model{}'.format(arguments.weight_file[6:]))
-    plt.show()
+    #plt.show()
 
 if __name__ == '__main__':
     main()
