@@ -10,7 +10,6 @@ import random
 from math import exp
 import matplotlib.pyplot as plt
 import os
-import h5py
 import argparse
 
 

@@ -13,9 +13,10 @@ from CustomModel.CNN_deep_model import cnn_deep_model as cnn_deep
 from CustomModel.CNN_try import cnn_try
 
 
-def model_dictionary():
+def model_dictionary(num_classes=1):
     """
         Dictionary used to import the several model with parse arguments.
     """
-    return {'cnn': cnn(), 'cnn_lstm': cnn_lstm(), 'cnn_dilated': cnn_dilated(),
-            'cnn_deep': cnn_deep(), 'cnn_try': cnn_try()}
+    return {'cnn': cnn(num_classes), 'cnn_lstm': cnn_lstm(),
+            'cnn_dilated': cnn_dilated(num_classes),
+            'cnn_deep': cnn_deep(num_classes), 'cnn_try': cnn_try()}

@@ -10,7 +10,7 @@ from keras.models import Sequential
 from keras.layers import Dropout,Flatten, BatchNormalization
 from keras.layers import Dense, Conv2D, MaxPooling2D
 
-def cnn_model() :
+def cnn_model(num_classes=1) :
     """
         Create a convolutional model with 3 convolutional layers before a final 
         dense a layer with one node used to make the final prediction.
@@ -18,7 +18,6 @@ def cnn_model() :
         ..notes: the precision of the prediction does not depend strongly with the architecture.
     """
     window = 2001
-    num_classes = 1
 
     fashion_model = Sequential()
 

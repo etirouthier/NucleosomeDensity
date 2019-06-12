@@ -36,8 +36,8 @@ def nucleotid_arrays(path_to_directory):
         ..notes:: train set and validation set are respectively (chr 2 to 
         chr 13) and (chr 14, chr 15)
     """
-    train_chr = range(1, 13)
-    val_chr = range(14, 16)
+    train_chr = [1, 2, 5, 6, 7, 8, 9, 10]
+    val_chr = [11, 14]
 
     for i in train_chr: 
         path_to_file = os.path.join(path_to_directory, 'chr' + str(i) + '.hdf5')
@@ -111,8 +111,8 @@ def nuc_occupancy(path_to_file, return_threshold=False) :
         ..notes:: train set and validation set are respectively (chr 2 to 
         chr 13) and (chr 14, chr 15).
     """
-    train_chr = range(1, 13)
-    val_chr = range(14, 16)
+    train_chr = [1, 2, 5, 6, 7, 8, 9, 10]
+    val_chr = [11, 14]
 
     proba = pd.read_csv(path_to_file ,sep = ',')
     proba_train = np.array(proba[proba.chr == 'chr' + str(train_chr[0])].value)
@@ -153,9 +153,12 @@ def nuc_occupancy(path_to_file, return_threshold=False) :
     if return_threshold:
         return threshold
     else:
-        return proba_train, weights_train, proba_val, weights_val
+        return proba_train.reshape(len(proba_train), 1), \
+               weights_train.reshape(len(weights_train), 1), \
+               proba_val.reshape(len(proba_val), 1), \
+               weights_val.reshape(len(weights_val), 1)
 
-def generator(path_to_directory, path_to_file, output_len=1,
+def generator(path_to_directory, paths, output_len=1,
               include_zeros = False, seq2seq = False):
     """
         Creates two keras data generator for the train set and the validation 
@@ -163,14 +166,14 @@ def generator(path_to_directory, path_to_file, output_len=1,
     
         :param path_to_directory: the path to the a directory containing the 
         DNA sequence of all chromosomes in .hdf5 format (see nucleotid_arrays())
-        :param path_to_file : the path to the .csv file with the nucleosome 
+        :param paths : the paths to the .csv files with the nucleosome 
         occupancy (see nuc_occupancy())
         :param include_zeros: weither or not to include zeros in the traning 
         :param seq2seq: weither the label is a sequence of length window or a 
         single value
         :param output_len: the length of the output with a seq2seq model 
         :type path_to_directory: os path
-        :type path_to_file: os path
+        :type paths: list of os path
         :type include_zeros: Boolean, default = False
         :type seq2seq: Boolean, default = False
         :type output_len: integer
@@ -188,7 +191,17 @@ def generator(path_to_directory, path_to_file, output_len=1,
         ..warning:: seq2seq need to be manually adapted to the model used
     """
     nucleotid_train, nucleotid_val = nucleotid_arrays(path_to_directory)
-    proba_train, weights_train, proba_val, weights_val = nuc_occupancy(path_to_file)
+    proba_train, weights_train, proba_val, weights_val = nuc_occupancy(paths[0])
+    
+    for path in paths[1:]:
+        proba_train_, weights_train_, proba_val_, weights_val_ = nuc_occupancy(path)
+        proba_train = np.append(proba_train, proba_train_, axis=1)
+        weights_train = np.append(weights_train, weights_train_, axis=1)
+        proba_val = np.append(proba_val, proba_val_, axis=1)
+        weights_val = np.append(proba_train, proba_train_, axis=1)
+   
+    weights_train = np.mean(weights_train, axis=1)
+    weights_val = np.mean(weights_val, axis=1)
 
     positions_train = np.arange(0, nucleotid_train.shape[0])
     positions_val = np.arange(0, nucleotid_val.shape[0])
@@ -198,18 +211,19 @@ def generator(path_to_directory, path_to_file, output_len=1,
     number_of_set_val = positions_val.shape[0] // batch_size
 
     if not include_zeros :
-        positions_train = positions_train[proba_train > 0]
-        positions_val = positions_val[proba_val > 0 ]
+        positions_train = positions_train[np.mean(proba_train, axis=1) > 0]
+        positions_val = positions_val[np.mean(proba_val, axis=1) > 0 ]
 
     positions_train = positions_train[1500 : - 1501]
     positions_val = positions_val[1500 : - 1501]
-
+    
     def generator_function(positions, nucleotid, proba, weights) :
         window = 2001   
         number_of_set = positions.shape[0] // batch_size
         half_wx = int((window-1)/2.)
         length = int(positions.shape[0] // number_of_set)
         half_len = output_len // 2
+        num_classes = proba.shape[1]
 
         while True:
 
@@ -233,17 +247,17 @@ def generator(path_to_directory, path_to_file, output_len=1,
                 if seq2seq and (output_len % 2 == 1):
                     y = np.array([proba[pos - half_len : pos + half_len + 1] for pos in positions_])
                     w = np.array([weights[pos - half_len : pos + half_len + 1] for pos in positions_])
-                    y = y.reshape((y.shape[0], y.shape[1], 1))
+                    y = y.reshape((y.shape[0], y.shape[1], num_classes))
                 elif seq2seq and (output_len % 2 == 0):
                     y = np.array([proba[pos - half_len : pos + half_len] for pos in positions_])
                     w = np.array([weights[pos - half_len : pos + half_len] for pos in positions_])
-                    y = y.reshape((y.shape[0], y.shape[1], 1))
+                    y = y.reshape((y.shape[0], y.shape[1], num_classes))
                 else:
                     y = proba[positions_]
                     w = weights[positions_]
-                    y = y.reshape(y.shape[0],1)
+                    y = y.reshape(y.shape[0], num_classes)
                 yield X_, y, w
-
+        
     return generator_function(positions_train,
                               nucleotid_train,
                               proba_train, weights_train), \

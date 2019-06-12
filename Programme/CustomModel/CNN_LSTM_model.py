@@ -10,7 +10,7 @@ from keras.models import Sequential
 from keras.layers import Dropout,Flatten, TimeDistributed, GlobalAveragePooling1D
 from keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Activation
 
-def cnn_lstm_model() :
+def cnn_lstm_model(num_classes=1) :
     """
         Create a convolutional model with 2 convolutional layers, 2 time distributed dense layer, an 
         LSTM layer and finally a global average pooling layer.
@@ -18,7 +18,7 @@ def cnn_lstm_model() :
         ..notes: the precision of the prediction does not depend strongly with the architecture.
     """
     window = 2001
-    num_classes = 1
+    
     
     model=Sequential()
     model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same'), input_shape=(window,10,4,1)))

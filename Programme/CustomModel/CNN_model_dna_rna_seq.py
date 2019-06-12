@@ -49,7 +49,7 @@ def cnn_model() :
     
     return fashion_model 
 
-def cnn_model_dna_rna():
+def cnn_model_dna_rna(num_classes=1):
     """
         Create a model that takes a sequence of DNA and the corresponding
         RNA seq landscape as input and returns the density of nucleosome at the
@@ -68,7 +68,7 @@ def cnn_model_dna_rna():
     reshaped_rna = Reshape(target_shape)(rna_seq_input)
     
     concatenated = concatenate([encoded_dna, reshaped_rna], axis=-1)
-    nucleosome_density = Dense(1, activation='relu')(concatenated)
+    nucleosome_density = Dense(num_classes, activation='relu')(concatenated)
 
     model = Model([dna_input, rna_seq_input], nucleosome_density)
 

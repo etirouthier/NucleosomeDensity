@@ -8,10 +8,10 @@ Created on Mon Jan 21 14:50:33 2019
 
 from keras.models import Model
 from keras.layers import Dropout, LeakyReLU, Concatenate, BatchNormalization
-from keras.layers import Conv2D, Reshape, Input, MaxPooling2D
+from keras.layers import Conv2D, Reshape, Input, MaxPooling2D, Dense, TimeDistributed
 import keras.backend as K
 
-def cnn_dilated_model() :
+def cnn_dilated_model(num_classes=1) :
     """
         Create a convolutional model with 2 convolutional layers with maxpooling before applying 
         a dilated convolutional layer to the model. The result is given by a layer with a convolution
@@ -64,5 +64,6 @@ def cnn_dilated_model() :
         
     output = conv_layer_3(new_image)
     output = Reshape((K.int_shape(output)[1], 1))(output)
+    output = TimeDistributed(Dense(num_classes, activation='relu'))(output)
    
     return Model(inputs, output), K.int_shape(output)[1]

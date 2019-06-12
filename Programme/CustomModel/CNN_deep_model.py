@@ -12,12 +12,11 @@ from keras.layers import Dense, Conv2D, MaxPooling2D
 from keras import Input
 
 
-def cnn_deep_model() :
+def cnn_deep_model(num_classes=1):
     """
         Create a ResNet to predict the nucleosome density along the genome.
     """
     WINDOW = 2001
-    num_classes = 1
 
     dna_input = Input(shape=(WINDOW, 4, 1), name='dna_sequence')
 

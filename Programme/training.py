@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument('-d', '--directory',
                         help='''Directory containing the DNA sequence chromosome
                         by chromosome in .hdf5 (in seq_chr_sacCer3)''')
-    parser.add_argument('-f', '--file',
+    parser.add_argument('-f', '--file',  nargs='+',
                         help="""CSV file containing the nucleosome occupancy
                         on the whole genome.""")
     parser.add_argument('-o', '--output_file',
@@ -50,20 +50,20 @@ def main():
     # we get the path conducting to seq_chr_sacCer3
     path_to_tensorboard = os.path.join(path_to_directory, 'Tensorboard')
     
-    path_to_file = os.path.join(path_to_directory,
+    path_to_file = [os.path.join(path_to_directory,
                                 'Start_data',
-                                args.file)
+                                file_name) for file_name in args.file]
     path_to_directory = os.path.join(path_to_directory,
                                      'seq_chr_sacCer3',
                                      args.directory)
-
     num_epochs = 200
+    num_classes = len(path_to_file)
 
     assert re.match(r'weights_.+\.hdf5', os.path.basename(args.output_file))
     path_to_output_file = os.path.join('../Results_nucleosome', args.output_file)
 
     if args.seq2seq :
-        model, output_len = model_dictionary()[args.model]
+        model, output_len = model_dictionary(num_classes)[args.model]
         generator_train, number_of_set_train, \
         generator_val, number_of_set_val = generator(path_to_directory,
                                                      path_to_file,
@@ -74,7 +74,7 @@ def main():
                       metrics=['mse', correlate],
                       sample_weight_mode='temporal')
     else:
-        model = model_dictionary()[args.model]
+        model = model_dictionary(num_classes)[args.model]
         generator_train, number_of_set_train, \
         generator_val, number_of_set_val = generator(path_to_directory,
                                                      path_to_file,

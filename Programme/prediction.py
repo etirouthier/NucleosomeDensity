@@ -32,7 +32,7 @@ def parse_arguments(args=None):
                         help = '''Directory containing the DNA sequence
                         chromosome by chromosome in .hdf5
                         (in seq_chr_sacCer3)''')
-    parser.add_argument('-f', '--file',
+    parser.add_argument('-f', '--file', nargs='+',
                         help= """CSV file containing the nucleosome occupancy
                         on the whole genome.""")
     parser.add_argument('-s', '--seq2seq',
@@ -42,6 +42,27 @@ def parse_arguments(args=None):
                         help='''Name of the model to predict
                         (only is seq2seq model)''')
     return parser.parse_args(args)
+
+def _load_true(proba_file, half_wx, output_len=1,
+               seq2seq=False, windows_num=1):
+    proba = pd.read_csv(proba_file)
+    y_true = proba[proba.chr == 'chr16'].value.values
+    threshold = nuc_occupancy(proba_file, return_threshold=True)
+    
+    if seq2seq:
+        if output_len % 2 == 0:
+            half_len = output_len//2
+        else:
+            half_len = output_len//2 + 1
+            
+        y_true = y_true[half_wx - half_len : \
+                        windows_num * output_len + half_wx - half_len]
+
+    else:
+        y_true = y_true[half_wx : -half_wx]
+
+    y_true /= float(threshold)
+    return y_true.reshape((len(y_true), 1))
 
 def load_data(seq2seq=False, args=None):
     window = 2001
@@ -62,38 +83,35 @@ def load_data(seq2seq=False, args=None):
     X_ = X_one_hot.reshape(X_one_hot.shape[0],
                            X_one_hot.shape[1] * X_one_hot.shape[2])
 
-    proba_directory = os.path.dirname(args.file)
-    proba_file = os.path.join(proba_directory, 'Start_data', args.file)
-
-    proba = pd.read_csv(proba_file)
-    y_true = proba[proba.chr == 'chr16'].value.values
-    threshold = nuc_occupancy(proba_file, return_threshold=True)
+    proba_files = [os.path.join(os.path.dirname(__file__),
+                                'Start_data',
+                                file_name) for file_name in args.file]
 
     if seq2seq:
         _, output_len = model_dictionary()[args.model]
-
-        if output_len % 2 == 0:
-            half_len = output_len//2
-        else:
-            half_len = output_len//2 + 1
 
         X_slide = rolling_window(X_, window=(window,4), asteps=(output_len,4))
         X_ = X_slide.reshape(X_slide.shape[0],
                              X_slide.shape[2],
                              X_slide.shape[3],
                              1)
-        y_true = y_true[half_wx - half_len : X_slide.shape[0]*output_len + half_wx - half_len]
-
+        windows_num = len(X_slide)
+        
     else:
         X_slide = rolling_window(X_, window=(window,4))
         X_ = X_slide.reshape(X_slide.shape[0],
                              X_slide.shape[2],
                              X_slide.shape[3],
                              1)
-        y_true = y_true[half_wx : -half_wx]
-
-    y_true /= np.max(y_true) * 1.5
-    y_true /= float(threshold)
+        output_len = 1
+        windows_num = 1
+    
+    y_true = _load_true(proba_files[0], half_wx,
+                        output_len, seq2seq, windows_num)
+    for proba_file in proba_files[1:]:
+        y_true_ = _load_true(proba_file, half_wx,
+                        output_len, seq2seq, windows_num)
+        y_true = np.append(y_true, y_true_, axis=1)
 
     return X_, y_true
 
@@ -116,28 +134,20 @@ def main(command_line_arguments=None):
     X_test, y_true = load_data(arguments.seq2seq, command_line_arguments)
 
     y_pred = model.predict(X_test)
-    y_pred = y_pred.reshape((y_pred.shape[0]*y_pred.shape[1],))
     np.save(path_to_results, y_pred)
 
-    correlation = pearsonr(y_pred, y_true)[0]
-    print('Correlation between true and pred :', correlation)
-
     fig = plt.figure(figsize=(10,10))
-    ax = fig.add_subplot(2,1,1)
-    ax.plot(y_pred, 'b', label='prediction')
-    ax.plot(y_true, 'r', label='experimental')
-    ax.legend()
-    ax2 = fig.add_subplot(2,1,2)
-    ax2.hist(y_pred, bins=100, density=True,
-             histtype='step', color='b', label='prediction')
-    ax2.hist(y_true, bins=100, density=True,
-             histtype='step', color='r', label='experimental')
-    ax2.legend()
-    ax.set_title('Experimental and predicted occupancy' + \
-                 'on chr 16 for model{}'.format(arguments.weight_file[6:]))
-    ax2.set_title('Experimental and predicted distribution of score' + \
-                  'on chr 16 for model{}'.format(arguments.weight_file[6:]))
-    #plt.show()
+    
+    for i in range(len(arguments.file)):
+        correlation = pearsonr(y_pred[:, i], y_true[:, i])[0]
+        print('Correlation between true and pred n°{}:'.format(i), correlation)
+        ax = fig.add_subplot(len(arguments.file), 1, i + 1)
+        ax.plot(y_pred[:, i], 'b', label='prediction')
+        ax.plot(y_true[:, i], 'r', label='experimental')
+        ax.legend()
+        ax.set_title('Experimental and predicted occupancy' + \
+                 'on chr 16 for model {}'.format(arguments.weight_file[6:]))
+    plt.show()
 
 if __name__ == '__main__':
     main()
