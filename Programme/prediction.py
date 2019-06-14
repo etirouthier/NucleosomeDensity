@@ -62,6 +62,7 @@ def _load_true(proba_file, half_wx, output_len=1,
         y_true = y_true[half_wx : -half_wx]
 
     y_true /= float(threshold)
+    y_true[y_true > 1] = 1
     return y_true.reshape((len(y_true), 1))
 
 def load_data(seq2seq=False, args=None):

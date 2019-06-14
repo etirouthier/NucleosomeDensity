@@ -91,7 +91,7 @@ class Sequence:
         return new_sequence[start : stop]
 
     def _propose_mutation(self):
-        position = random.randint(0, self.length)
+        position = random.randint(0, self.length - 1)
         mutation = np.random.choice([1, 2, 3, 4], p=[0.3, 0.3, 0.2, 0.2])
 
         while mutation == self.mutated_seq[position]:
@@ -116,7 +116,7 @@ class Energie:
             Args:
                 seq: numpy array of the one-hot-encoded initial sequence
                 (with a rolling window applied so that prediction can be made).
-                model: the trained keras model.
+                model: the trained keras model (could be multi-output)
                 y_target: the target nucleosome density.
             Returns:
                 energie: an Energie instance.
@@ -148,12 +148,15 @@ class Energie:
         self.mutated_energie = self.energie
         self.mutated_pred = self.prediction
 
+    def _get_one_energie(self, y):
+        return np.mean(np.abs(y - self.y_target)) - \
+               np.corrcoef(y, self.y_target)[0, 1] + 1
+
     def _get_energie(self, y):
-        return np.mean(np.abs(y[:, 0] - self.y_target)) - \
-               np.corrcoef(y[:, 0], self.y_target)[0, 1] + 1
+        return np.mean([self._get_one_energie(y[:, i]) \
+                        for i in range(y.shape[1])])
 
-
-def step(sequence, temp, *args):
+def step(sequence, energie, temp):
     """
         Propose a mutation of the sequence and accept or reject this mutation
         on the basis of Metropolis algorithm.
@@ -164,29 +167,22 @@ def step(sequence, temp, *args):
         
         Args:
             sequence: a Sequence instance
-            args: Energie instances corresponding to the sequence, one per
-            model and the same target for all.
+            energie: Energie instances corresponding to the sequence
             temp: the temperature of the simulation
         Return:
             accepted: boolean, true if mutation accepted
     """
-    for energie in args:
-        energie.compute_mutated_energie(sequence.mutated_seq_predictable)
+    energie.compute_mutated_energie(sequence.mutated_seq_predictable)
     rand = random.uniform(0,1)
-    
-    total_old_energie = sum([energie.energie for energie in args])
-    total_mutated_energie = sum([energie.mutated_energie for energie in args])
-    
-    if exp((total_old_energie - total_mutated_energie) / temp) >= rand :
+
+    if exp((energie.energie - energie.mutated_energie) / temp) >= rand :
         sequence.accept_mutation()
-        for energie in args:
-            energie.accept_mutation()
+        energie.accept_mutation()
         accepted = True
 
     else:
         sequence.reject_mutation()
-        for energie in args:
-            energie.reject_mutation()
+        energie.reject_mutation()
         accepted = False
 
     return accepted
@@ -200,8 +196,8 @@ def _parse_arguments(args=None):
                         predict on""")
     parser.add_argument('-s','--steps',
                         help='''Number of Metropolis iterations.''')
-    parser.add_argument('-m','--model', nargs='+',
-                        help='''Name of the models to be used for prediction''')
+    parser.add_argument('-m','--model',
+                        help='''Name of the model to be used for prediction''')
     parser.add_argument('-t', '--temperature',
                         help="""temperature used in the metropolis algorithm""")
     return parser.parse_args(args)
@@ -213,13 +209,13 @@ def main(command_line_arguments=None):
     """
     args = _parse_arguments(command_line_arguments)
 
-    models = [load_model(os.path.join(os.path.dirname(__file__),
-                                     '..',
-                                     'Results_nucleosome',
-                                     os.path.basename(os.path.abspath(model))),
+    model = load_model(os.path.join(os.path.dirname(__file__),
+                                    '..',
+                                    'Results_nucleosome',
+                                    os.path.basename(os.path.abspath(args.model))),
                         custom_objects={'correlate': correlate,
                                         'mse_var': mse_var,
-                                        'mae_cor': mae_cor}) for model in args.model]
+                                        'mae_cor': mae_cor})
 
     y_target_ = np.arange(0, 0.4, 0.4 / 73)
     y_target_ = np.append(y_target_, 0.4 - y_target_)
@@ -229,8 +225,7 @@ def main(command_line_arguments=None):
         y_target = np.append(y_target, y_target_)
 
     sequence = Sequence(int(args.length), int(args.repeat))
-    energies = [Energie(sequence.seq_predictable, model, y_target) \
-                for model in models]
+    energie = Energie(sequence.seq_predictable, model, y_target) 
     store_nrj = list()
     compteur = 0
 
@@ -241,22 +236,19 @@ def main(command_line_arguments=None):
 
     line_energie, = ax_energie.plot(range(compteur), store_nrj)
     line_pred, = ax_pred.plot(y_target, 'r')
-    mean_prediction = np.mean(np.concatenate([energie.prediction for energie in energies],
-                                             axis=1), axis=1)
+    mean_prediction = np.mean(energie.prediction, axis=1)
     line_pred, = ax_pred.plot(mean_prediction, 'b')
 
     for i in range(int(args.steps)):
-        accepted = step(sequence, float(args.temperature), *energies)
-        mean_prediction = np.mean(np.concatenate([energie.prediction for energie in energies],
-                                             axis=1), axis=1)
-        mean_energie = np.mean([energie.energie for energie in energies])
-        store_nrj.append(mean_energie)
+        accepted = step(sequence, energie, float(args.temperature))
+        mean_prediction = np.mean(energie.prediction, axis=1)
+        store_nrj.append(energie.energie)
 
         if accepted:
             compteur += 1
 
         # saving the sequence with the minimal energie
-        if i > 1 and mean_energie < min(store_nrj[:-1]):
+        if i > 1 and energie.energie < min(store_nrj[:-1]):
             np.save(os.path.join(os.path.dirname(__file__),
                                  '..',
                                  'Results_nucleosome',
