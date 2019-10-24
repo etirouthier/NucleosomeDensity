@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan 10 16:20:53 2019
@@ -21,10 +21,10 @@ def cnn_model(num_classes=1) :
 
     fashion_model = Sequential()
 
-    fashion_model.add(Conv2D(64, kernel_size=(3,4),
+    fashion_model.add(Conv2D(64, kernel_size=(3, 1),
                              activation='relu',
-                             input_shape=(window,4,1),
-                             padding='valid'))
+                             input_shape=(window, 1, 4),
+                             padding='same'))
     fashion_model.add(MaxPooling2D((2,1),padding='same'))
     fashion_model.add(BatchNormalization())
     fashion_model.add(Dropout(0.2))

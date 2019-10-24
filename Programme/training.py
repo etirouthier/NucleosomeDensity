@@ -17,6 +17,7 @@ from MyModuleLibrary.mykeras.losses import correlate, mae_cor
 from DataPipeline.generator import generator
 from CustomModel.Models import model_dictionary
 
+from keras.models import load_model
 
 
 def parse_arguments():
@@ -36,6 +37,18 @@ def parse_arguments():
                         help="""Weither or not to include zeros in the training""")
     parser.add_argument('-s', '--seq2seq', action='store_true',
                         help="""If the model is a seq2seq model""")
+    parser.add_argument('-ds', '--downsampling', action='store_true',
+                        help="""To downsampled the predicted sequence for a 
+                        seq2seq model, the length of sampling will be calculated""")
+    parser.add_argument('-n', '--norm_max', action='store_true',
+                        help="""Normalizing the data by dividing by a rolling
+                        max""")
+    parser.add_argument('-t','--training_set', nargs='+',
+                        default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+                        help='''list of chromosome in the training set''')
+    parser.add_argument('-v','--validation_set', nargs='+',
+                        default=[14, 15],
+                        help='''list of chromosome in the validation set''')
     return parser.parse_args()
 
 def prepare_session():
@@ -61,15 +74,19 @@ def main():
 
     assert re.match(r'weights_.+\.hdf5', os.path.basename(args.output_file))
     path_to_output_file = os.path.join('../Results_nucleosome', args.output_file)
-
+    
     if args.seq2seq :
         model, output_len = model_dictionary(num_classes)[args.model]
         generator_train, number_of_set_train, \
         generator_val, number_of_set_val = generator(path_to_directory,
                                                      path_to_file,
+                                                     args.training_set,
+                                                     args.validation_set,
                                                      output_len,
                                                      args.include_zeros,
-                                                     args.seq2seq)
+                                                     args.norm_max, 
+                                                     args.seq2seq,
+                                                     args.downsampling)
         model.compile(optimizer='adam', loss=mae_cor,
                       metrics=['mse', correlate],
                       sample_weight_mode='temporal')
@@ -78,7 +95,11 @@ def main():
         generator_train, number_of_set_train, \
         generator_val, number_of_set_val = generator(path_to_directory,
                                                      path_to_file,
+                                                     args.training_set,
+                                                     args.validation_set,
+                                                     1,
                                                      args.include_zeros,
+                                                     args.norm_max,
                                                      args.seq2seq)
         model.compile(optimizer='adam',
                       loss=mae_cor,

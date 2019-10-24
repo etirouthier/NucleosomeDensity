@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar  4 15:14:03 2019
@@ -62,7 +62,7 @@ def _convertaline(aseq):
 
     while i < L:
         if i % 1000000 == 0:
-            print 'Already {} nucleotides have been converted'.format(i)
+            print('Already {} nucleotides have been converted'.format(i))
         aseqL[i] = _convertchar(aseq[i])
         i += 1
     return aseqL, L
@@ -78,13 +78,13 @@ def faconverter(filenamein, pathtofileout=False):
         pathtofileout: if passed, path to the returning hdf5 file.
     '''
     if re.match(r'.*\.fa$', os.path.basename(filenamein)):
-        fin = open(filenamein, 'r')
+        fin = open(filenamein, 'rt')
     elif re.match(r'.*\.fa\.gz$', os.path.basename(filenamein)):
-        fin = gzip.open(filenamein, 'r')
+        fin = gzip.open(filenamein, 'rt')
     else:
         raise ValueError("file must be a fasta file (or .fa.gz)")
         
-    print 'Converting the file : {}'.format(filenamein)  
+    print('Converting the file : {}'.format(filenamein))
     
     for seq_record in SeqIO.parse(fin, 'fasta'):
         vout = _convertaline(seq_record.seq)[0]
@@ -124,8 +124,8 @@ def main(command_line_arguments=None):
     args = _parse_arguments(command_line_arguments)
 
     for element in os.listdir(args.directory):
-        if re.match(r'chr\d+\.fa', element):
-            num = re.search('chr\d+\.', element)
+        if re.match(r'chr\d+.?\.fa', element):
+            num = re.search('chr\d+.?\.', element)
             faconverter(os.path.join(args.directory, element),
                         os.path.join(args.output, num.group(0) + 'hdf5'))
 

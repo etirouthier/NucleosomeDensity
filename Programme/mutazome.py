@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar 21 11:11:31 2019
@@ -32,11 +32,11 @@ def _makebatch(nuc_seq, pos, mutation, window):
                            x_slide.shape[3],
                            1)
 
-def _mutation_score(y_wilde, y_syn, pos, window):    
-    y_true = y_wilde[pos - window + 1 : pos + 1]
-    y_true = y_true.reshape(y_true.shape[0])
+def _mutation_score(y_wild, y_syn, pos, window):    
+    y_true = y_wild[pos - window + 1 : pos + 1]
+    y_true = y_true.reshape(len(y_true))
     
-    y_syn = y_syn.reshape(y_syn.shape[0])
+    y_syn = y_syn.reshape(len(y_syn))
     return np.mean(np.abs(y_syn - y_true)) - \
                np.corrcoef(y_syn, y_true)[0, 1] + 1
 
@@ -88,11 +88,11 @@ def main(command_line_arguments=None):
     f.close()
     
     WINDOW = 2001
-    mutazome = np.zeros((nucleotid.shape[0], 4))
+    mutazome = np.zeros((len(nucleotid), y_pred.shape[1], 4))
     
-    for pos in range(WINDOW, nucleotid.shape[0] - WINDOW):
+    for pos in range(WINDOW, len(nucleotid) - WINDOW):
         if pos % 100 == 0:
-            print 'Studying nucleotid : ' + str(pos)
+            print('Studying nucleotid : ' + str(pos))
             
             np.save(os.path.join(path_to_program, '..','Results_nucleosome',
                                  'mutazome' + os.path.basename(args.model)[7 : -5]),
@@ -101,7 +101,12 @@ def main(command_line_arguments=None):
         for mutation in [1, 2, 3, 4]:
             x_syn = _makebatch(nucleotid, pos, mutation, WINDOW)
             y_syn = model.predict(x_syn)
-            mutazome[pos, mutation - 1] = _mutation_score(y_pred, y_syn, pos, WINDOW)
+            
+            for i in range(y_pred.shape[1]):
+                mutazome[pos, mutation - 1] = _mutation_score(y_pred[:, i],
+                                                              y_syn[:, i],
+                                                              pos,
+                                                              WINDOW)
 
 if __name__ == '__main__':
     main()

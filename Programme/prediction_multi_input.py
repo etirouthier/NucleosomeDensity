@@ -54,7 +54,7 @@ def load_data():
                                 'chr16.hdf5')
 
     f = h5py.File(path_to_file,'r')
-    nucleotid = np.array(f[f.keys()[0]])
+    nucleotid = np.array(f['data'])
     f.close()
 
     X_one_hot = (np.arange(nucleotid.max()) == nucleotid[...,None]-1).astype(int)
