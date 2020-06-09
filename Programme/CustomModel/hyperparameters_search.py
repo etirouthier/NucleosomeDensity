@@ -26,8 +26,10 @@ def data():
     Data providing function:
     """
     generator_train, number_of_set_train, \
-    generator_val, number_of_set_val = generator('seq_chr_sacCer3/sacCer3',
-                                                 'Start_data/proba_in_vivo.csv')
+    generator_val, number_of_set_val = generator(train_chr=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+                                                 val_chr=[14, 15],
+                                                 path_to_directory='seq_chr_sacCer3/sacCer3',
+                                                 paths=['Start_data/proba_in_vivo.csv'])
 
     return generator_train, number_of_set_train, \
     generator_val, number_of_set_val

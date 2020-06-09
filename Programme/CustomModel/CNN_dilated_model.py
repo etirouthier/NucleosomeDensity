@@ -6,60 +6,50 @@ Created on Mon Jan 21 14:50:33 2019
 @author: routhier
 """
 
-from keras.models import Model
-from keras.layers import Dropout, Concatenate, BatchNormalization
-from keras.layers import Conv2D, Reshape, Input, MaxPooling2D
-import keras.backend as K
+from keras.models import Sequential
+from keras.layers import Dropout,Flatten, BatchNormalization
+from keras.layers import Dense, Conv2D, MaxPooling2D
 
 
 def cnn_dilated_model(num_classes=1) :
     """
-        Create a convolutional model with 2 convolutional layers with maxpooling before applying 
-        a dilated convolutional layer to the model. The result is given by a layer with a convolution
-        with size (1x1).
-        
-        ..notes: the precision of the prediction does not depend strongly on the architecture.
+        Create a convolutional model with 3 convolutional layers before a final 
+        dense a layer with one node used to make the final prediction. Convolution are dilated
+        with a range 1, 2, 4 to capture long range deendencies.
+
+        ..notes: the precision of the prediction does not depend strongly with the architecture.
     """
-    WINDOW = 2**14
+    window = 2001
 
-    inputs = Input(shape=(WINDOW, 1, 4))
-    dropout_layer = Dropout(0.1)
+    fashion_model = Sequential()
 
-    image = Conv2D(128, kernel_size=(20, 4),
-                          activation='relu',
-                          padding='same')(inputs)
-    image = BatchNormalization()(image)
-    image = MaxPooling2D((2,1),padding='same')(image)
-    image = dropout_layer(image)
+    fashion_model.add(Conv2D(64, kernel_size=(3, 1),
+                             activation='relu',
+                             input_shape=(window, 1, 4),
+                             padding='same'))
+    fashion_model.add(MaxPooling2D((2,1),padding='same'))
+    fashion_model.add(BatchNormalization())
+    fashion_model.add(Dropout(0.2))
 
-    image = Conv2D(128, kernel_size=(7, 1),
-                          activation='relu',
-                          padding='same')(image)
-    image = BatchNormalization()(image)
-    image = MaxPooling2D((4,1),padding='same')(image)
-    image = dropout_layer(image)
+    fashion_model.add(Conv2D(16, kernel_size=(8, 1),
+                             activation='relu',
+                             padding='same',
+                             dilation_rate=(2, 1)))
+    fashion_model.add(MaxPooling2D((2,1),padding='same'))
+    fashion_model.add(BatchNormalization())
+    fashion_model.add(Dropout(0.2))
 
-    image = Conv2D(256, kernel_size=(3,1),
-                          activation='relu',
-                          padding='same')(image)
-    image = BatchNormalization()(image)
-    image = MaxPooling2D((2,1),padding='same')(image)
-    new_image = dropout_layer(image)
+    fashion_model.add(Conv2D(8,
+                             kernel_size=(10, 1),
+                             activation='relu',
+                             padding='same',
+                             dilation_rate=(4, 1)))
+    fashion_model.add(MaxPooling2D((2,1),padding='same'))
+    fashion_model.add(BatchNormalization())
+    fashion_model.add(Dropout(0.2))
 
-    for i in range(1,5):
-        dilated_conv_layer = Conv2D(32, kernel_size=(3,1),
-                                    activation='relu',
-                                    padding='same',
-                                    dilation_rate=(2**i,1))
-        image_1 = dilated_conv_layer(new_image)
-        image_1 = BatchNormalization()(image_1)
-        image_1 = dropout_layer(image_1)
-        new_image = Concatenate(axis=-1)([new_image, image_1])
+    fashion_model.add(Flatten())
 
-    output = Conv2D(1, kernel_size=(1, 1),
-                          activation='relu',
-                          padding='same')(new_image)
-    
-    output = Reshape((K.int_shape(output)[1], 1))(output)
+    fashion_model.add(Dense(num_classes, activation='relu'))
 
-    return Model(inputs, output), K.int_shape(output)[1]
+    return fashion_model 

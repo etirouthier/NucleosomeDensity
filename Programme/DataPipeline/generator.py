@@ -47,7 +47,11 @@ def nucleotid_arrays(path_to_directory,
         f = h5py.File(path_to_file,'r')
         nucleotid_ = np.array(f['data'])
         f.close()
-        
+
+        #nucleotid_[nucleotid_ == 2] = 5
+        #nucleotid_[nucleotid_ == 4] = 2
+        #nucleotid_[nucleotid_ == 5] = 4
+
         if (i == train_chr[0]):
             nucleotid_train = nucleotid_
         else :
@@ -59,6 +63,10 @@ def nucleotid_arrays(path_to_directory,
         f = h5py.File(path_to_file,'r')
         nucleotid_ = np.array(f['data'])
         f.close()
+        
+        #nucleotid_[nucleotid_ == 2] = 5
+        #nucleotid_[nucleotid_ == 4] = 2
+        #nucleotid_[nucleotid_ == 5] = 4
     
         if (i == val_chr[0]):
             nucleotid_val = nucleotid_
@@ -68,15 +76,16 @@ def nucleotid_arrays(path_to_directory,
     return nucleotid_train, nucleotid_val
 
 def _find_threshold(proba):
-    density, values = np.histogram(proba, bins=1000, density=True)
-    limit = 0.0001
+    return np.percentile(proba, 99)
+    #density, values = np.histogram(proba, bins=1000, density=True)
+    #limit = 0.0001
 
-    if (density < limit).any():
-        threshold = values[np.where(density < limit)[0][0]]
-    else:
-        threshold = np.max(proba)
+    #if (density < limit).any():
+    #    threshold = values[np.where(density < limit)[0][0]]
+    #else:
+    #    threshold = np.max(proba)
 
-    return threshold
+    #return threshold
 
 def _max_norm(y, wx=3001):
     y_roll = rolling_window(y, window=wx)
@@ -190,7 +199,8 @@ def generator(path_to_directory,
               max_norm=False,
               include_zeros=False,
               seq2seq=False,
-              downsampling=False):
+              downsampling=False,
+              pourc=None):
     """
         Creates two keras data generator for the train set and the validation 
         set.
@@ -212,6 +222,8 @@ def generator(path_to_directory,
         (defaut adapted for S.cerevisiae)
         :type train_chr: list
         :param val_chr: same for validation
+        :param pourc: pourcentage of the data to be included
+        :type pourc: int or None
         
         :Example:
     
@@ -247,19 +259,25 @@ def generator(path_to_directory,
     weights_val = np.mean(weights_val, axis=1)
 
     positions_train = np.arange(0, nucleotid_train.shape[0])
-    positions_val = np.arange(0, nucleotid_val.shape[0])
+    positions_val = np.arange(0, nucleotid_val.shape[0]) 
     
     batch_size = 512
-    number_of_set_train = positions_train.shape[0] // batch_size
-    number_of_set_val = positions_val.shape[0] // batch_size
-
+    
     if not include_zeros :
         positions_train = positions_train[np.mean(proba_train, axis=1) > 0]
         positions_val = positions_val[np.mean(proba_val, axis=1) > 0 ]
 
     positions_train = positions_train[1000 : - 1000]
     positions_val = positions_val[1000 : - 1000]
-    
+
+    if pourc:
+        positions_train = reorganize_random_multi_array(positions_train)
+        nb_examples = int(pourc) * len(positions_train) // 100
+        positions_train = positions_train[:nb_examples]
+ 
+    number_of_set_train = len(positions_train) // batch_size
+    number_of_set_val = len(positions_val) // batch_size
+
     def generator_function(positions, nucleotid, proba, weights) :
         window = 2001   
         number_of_set = positions.shape[0] // batch_size
@@ -276,13 +294,15 @@ def generator(path_to_directory,
             for num in range(0, number_of_set) :
 
                 positions_ = position[num*length : (num + 1) * length]
-                X_ = np.zeros((positions_.shape[0],window,1 ,4))
+                X_ = np.zeros((positions_.shape[0], window, 1, 4))
+                #X_ = np.zeros((positions_.shape[0], window ,4))
 
                 for i in range(0, positions_.shape[0]) :
                     nucleotid_ = nucleotid[positions_[i] - half_wx : positions_[i] + half_wx + (window % 2)]
                     nucleotid_ = nucleotid_.reshape(nucleotid_.shape[0],1)
                     X_one_hot = (np.arange(4) == nucleotid_[...,None]-1).astype(int)
                     _X_ = X_one_hot.reshape(X_one_hot.shape[0], 1, X_one_hot.shape[1] * X_one_hot.shape[2])
+                    #_X_ = X_one_hot.reshape(X_one_hot.shape[0], X_one_hot.shape[1] * X_one_hot.shape[2])
                     X_[i] = _X_
 
                 if seq2seq and not downsampling:

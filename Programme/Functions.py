@@ -13,6 +13,11 @@ from MyModuleLibrary.array_modifier import rolling_window
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import matplotlib as mpl
+from matplotlib.text import TextPath
+from matplotlib.patches import PathPatch
+from matplotlib.font_manager import FontProperties
+
 def calculate_nrl(tss_occupancy):
     """
         Calculate the NRL from the mean nucleosome occupancy in TSS region.
@@ -27,7 +32,7 @@ def calculate_nrl(tss_occupancy):
     nrl = np.polyfit(np.arange(1, 6, 1), peaks[:5], 1)[0]
     return nrl
 
-def one_hot_encoder( nucleotid):
+def one_hot_encoder(nucleotid):
     """
         Take a nucleotid sequence and return the one-hot-encoded version.
         
@@ -446,3 +451,55 @@ def corrplot(data, size_scale=700, marker='s',
         y_order=data.columns[::-1],
         size_scale=size_scale,
         )
+
+def _letterAt(letter, x, y, yscale=1, ax=None):
+    fp = FontProperties(family="Arial", weight="bold") 
+    globscale = 1.35
+    LETTERS = { "T" : TextPath((-0.305, 0), "T", size=1, prop=fp),
+                "G" : TextPath((-0.384, 0), "G", size=1, prop=fp),
+                "A" : TextPath((-0.35, 0), "A", size=1, prop=fp),
+                "C" : TextPath((-0.366, 0), "C", size=1, prop=fp) }
+    COLOR_SCHEME = {'G': 'orange', 
+                    'A': 'red', 
+                    'C': 'blue', 
+                    'T': 'darkgreen'}
+
+    text = LETTERS[letter]
+
+    t = mpl.transforms.Affine2D().scale(1*globscale, yscale*globscale) + \
+        mpl.transforms.Affine2D().translate(x,y) + ax.transData
+    p = PathPatch(text, lw=0, fc=COLOR_SCHEME[letter],  transform=t)
+    if ax != None:
+        ax.add_artist(p)
+    return p
+
+def plot_logo(motif, name=None, index=None, figsize=(5, 1.4)):
+    """
+        Plot a logo associated to a motif, the motif must be a numpy array with 1 standing for A, 2 for T, 3 for G
+        and 4 for C.
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    all_scores = [[('A', motif[i, 0]),
+                   ('T', motif[i, 1]),
+                   ('G', motif[i, 2]),
+                   ('C', motif[i, 3])] for i in range(motif.shape[0])]
+    ax.set_facecolor('w')   
+    ax.set_axis_off()
+
+    x = 1
+    maxi = 0
+    for scores in all_scores:
+        y = 0
+        for base, score in scores:
+            _letterAt(base, x, y, score, ax)
+            y += score
+        x += 1
+        maxi = max(maxi, y)
+
+    ax.set_xticks(range(1,x))
+    ax.set_xlim((0, x)) 
+    ax.set_ylim((0, maxi))
+    plt.tight_layout()  
+    plt.show()
+    return fig
+    

@@ -5,8 +5,10 @@
 	It is made to work as a usual loss or metric.
 """
 
-
-from keras import backend as K
+try:
+    from keras import backend as K
+except ModuleNotFoundError:
+    from tensorflow.keras import backend as K
 
 
 def correlate(y_true, y_pred):

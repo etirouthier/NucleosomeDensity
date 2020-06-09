@@ -6,37 +6,48 @@ Created on Tue Jan 15 14:25:16 2019
 @author: routhier
 """
 
-from keras.models import Sequential
-from keras.layers import Dropout,Flatten, TimeDistributed, GlobalAveragePooling1D
-from keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Activation
+from keras.models import Model
+from keras.layers import Dropout, TimeDistributed, Input, BatchNormalization
+from keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Reshape
+import keras.backend as K
 
 def cnn_lstm_model(num_classes=1) :
     """
-        Create a convolutional model with 2 convolutional layers, 2 time distributed dense layer, an 
-        LSTM layer and finally a global average pooling layer.
+        Create a convolutional model with 3 convolutional layers, an 
+        LSTM layer and finally a time distributed dense layer,.
         
         ..notes: the precision of the prediction does not depend strongly with the architecture.
     """
     window = 2001
-    
-    
-    model=Sequential()
-    model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same'), input_shape=(window,10,4,1)))
-    model.add(TimeDistributed(Activation('relu')))
-   
-    model.add(TimeDistributed(Conv2D(32, (3, 3))))
-    model.add(TimeDistributed(Activation('relu')))
-    model.add(TimeDistributed(MaxPooling2D(pool_size=(2, 2))))
-   
-    model.add(TimeDistributed(Dropout(0.25)))
-    
-    model.add(TimeDistributed(Flatten()))
-    model.add(TimeDistributed(Dense(32)))
-    model.add(TimeDistributed(Dense(35, name="first_dense" )))
-    
-    model.add(LSTM(20, return_sequences=True, name="lstm_layer"));#%%
-    model.add(TimeDistributed(Dense(num_classes, activation='sigmoid'), name="time_distr_dense_one"))
-    model.add(GlobalAveragePooling1D(name="global_avg"))
 
-    return model 
+    inputs = Input(shape=(window, 1, 4))
+    x = Conv2D(64, (3, 1),
+               padding='same',
+               activation='relu')(inputs)
+    x = MaxPooling2D(pool_size=(2, 1))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+
+    x = Conv2D(16,
+               kernel_size=(8,1),
+               activation='relu',
+               padding='same')(x)
+    x = MaxPooling2D((2,1), padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+
+    x = Conv2D(8,
+               kernel_size=(80,1),
+               activation='relu',
+               padding='same')(x)
+    x = MaxPooling2D((3, 1),padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    
+    x = Reshape((K.int_shape(x)[1], K.int_shape(x)[3]))(x)
+    x = LSTM(20, return_sequences=False)(x)
+    outputs = Dense(1, activation='linear')(x)
+
+    model = Model(inputs, outputs)
+    return model
 

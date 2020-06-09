@@ -8,6 +8,7 @@ Created on Thu Jan 10 09:34:19 2019
 import os
 import argparse
 import re
+import numpy as np
 
 import keras.backend as K
 import tensorflow as tf
@@ -16,8 +17,6 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from MyModuleLibrary.mykeras.losses import correlate, mae_cor
 from DataPipeline.generator import generator
 from CustomModel.Models import model_dictionary
-
-from keras.models import load_model
 
 
 def parse_arguments():
@@ -49,20 +48,24 @@ def parse_arguments():
     parser.add_argument('-v','--validation_set', nargs='+',
                         default=[14, 15],
                         help='''list of chromosome in the validation set''')
+    parser.add_argument('-p', '--pourcentage',
+                        help='''pourcentage of the training data to be included''')
     return parser.parse_args()
 
 def prepare_session():
-    config = tf.ConfigProto(device_count={'GPU': 1 , 'CPU': 8} ) 
-    K.clear_session()
-    sess = tf.Session(config=config) 
-    K.set_session(sess)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True  
+    config.log_device_placement = True 
+    sess = tf.Session(config=config)
+    K.tensorflow_backend.set_session(sess) 
 
 def main():
     args = parse_arguments()
+    prepare_session()
     path_to_directory = os.path.dirname(__file__)
     # we get the path conducting to seq_chr_sacCer3
     path_to_tensorboard = os.path.join(path_to_directory, 'Tensorboard')
-    
+
     path_to_file = [os.path.join(path_to_directory,
                                 'Start_data',
                                 file_name) for file_name in args.file]
@@ -74,7 +77,7 @@ def main():
 
     assert re.match(r'weights_.+\.hdf5', os.path.basename(args.output_file))
     path_to_output_file = os.path.join('../Results_nucleosome', args.output_file)
-    
+
     if args.seq2seq :
         model, output_len = model_dictionary(num_classes)[args.model]
         generator_train, number_of_set_train, \
@@ -86,7 +89,8 @@ def main():
                                                      args.include_zeros,
                                                      args.norm_max, 
                                                      args.seq2seq,
-                                                     args.downsampling)
+                                                     args.downsampling,
+                                                     args.pourcentage)
         model.compile(optimizer='adam', loss=mae_cor,
                       metrics=['mse', correlate],
                       sample_weight_mode='temporal')
@@ -100,10 +104,13 @@ def main():
                                                      1,
                                                      args.include_zeros,
                                                      args.norm_max,
-                                                     args.seq2seq)
+                                                     args.seq2seq,
+                                                     args.downsampling,
+                                                     args.pourcentage)
+
         model.compile(optimizer='adam',
                       loss=mae_cor,
-                      metrics=['mse', correlate])
+                      metrics=['mae', correlate])
 
     checkpointer = ModelCheckpoint(filepath=path_to_output_file,
                                    monitor='val_loss',
@@ -113,18 +120,17 @@ def main():
                                    mode='min', period=1)
     early = EarlyStopping(monitor='val_loss',
                           min_delta=0,
-                          patience=10,
+                          patience=5,
                           verbose=0,
                           mode='auto')
     tensorboard = TensorBoard(log_dir=path_to_tensorboard, update_freq=200)
     print(model.summary())
-    model.fit_generator(generator = generator_train,
-                        steps_per_epoch = 500, 
-                        epochs = num_epochs,
-                        validation_data = generator_val, 
-                        validation_steps = 200, 
-                        callbacks = [checkpointer, early, tensorboard])
-
+    history = model.fit_generator(generator=generator_train,
+                                  steps_per_epoch=500, #number_of_set_train, 
+                                  epochs=num_epochs,
+                                  validation_data=generator_val, 
+                                  validation_steps=200, #number_of_set_val, 
+                                  callbacks=[checkpointer, early, tensorboard])
 
 if __name__ == '__main__':
     main()
