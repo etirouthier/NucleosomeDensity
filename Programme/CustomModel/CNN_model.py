@@ -7,7 +7,7 @@ Created on Thu Jan 10 16:20:53 2019
 """
 
 from keras.models import Sequential
-from keras.layers import Dropout,Flatten, BatchNormalization
+from keras.layers import Dropout, Flatten, BatchNormalization
 from keras.layers import Dense, Conv2D, MaxPooling2D
 
 def cnn_model(num_classes=1) :
@@ -48,4 +48,3 @@ def cnn_model(num_classes=1) :
     fashion_model.add(Dense(num_classes, activation='relu'))
 
     return fashion_model 
-

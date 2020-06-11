@@ -10,6 +10,7 @@ import numpy as np
 import h5py
 import os
 import pandas as pd
+import scipy
 from MyModuleLibrary.array_modifier import reorganize_random_multi_array, rolling_window
 
 
@@ -200,7 +201,8 @@ def generator(path_to_directory,
               include_zeros=False,
               seq2seq=False,
               downsampling=False,
-              pourc=None):
+              pourc=None,
+              fft=False):
     """
         Creates two keras data generator for the train set and the validation 
         set.
@@ -224,6 +226,8 @@ def generator(path_to_directory,
         :param val_chr: same for validation
         :param pourc: pourcentage of the data to be included
         :type pourc: int or None
+        :param fft: applying an fft transform to the target
+        :type fft: boolean
         
         :Example:
     
@@ -331,7 +335,11 @@ def generator(path_to_directory,
                     y = proba[positions_]
                     w = weights[positions_]
                     y = y.reshape(y.shape[0], num_classes)
-                yield X_, y, w
+                if fft:
+                    y = np.concatenate([scipy.fft(y[:, i]).reshape((-1, 1)) for i in range(num_classes)], axis=1)
+                    yield X_, y
+                else:
+                    yield X_, y, w
         
     return generator_function(positions_train,
                               nucleotid_train,

@@ -50,6 +50,8 @@ def parse_arguments():
                         help='''list of chromosome in the validation set''')
     parser.add_argument('-p', '--pourcentage',
                         help='''pourcentage of the training data to be included''')
+    parser.add_argument('--fft', action='store_true',
+                        help="""Weither or not to apply an fft transform of the target""")
     return parser.parse_args()
 
 def prepare_session():
@@ -90,7 +92,8 @@ def main():
                                                      args.norm_max, 
                                                      args.seq2seq,
                                                      args.downsampling,
-                                                     args.pourcentage)
+                                                     args.pourcentage,
+                                                     args.fft)
         model.compile(optimizer='adam', loss=mae_cor,
                       metrics=['mse', correlate],
                       sample_weight_mode='temporal')
@@ -106,7 +109,8 @@ def main():
                                                      args.norm_max,
                                                      args.seq2seq,
                                                      args.downsampling,
-                                                     args.pourcentage)
+                                                     args.pourcentage,
+                                                     args.fft)
 
         model.compile(optimizer='adam',
                       loss=mae_cor,
