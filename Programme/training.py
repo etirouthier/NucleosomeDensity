@@ -120,16 +120,16 @@ def main():
                                    mode='min', period=1)
     early = EarlyStopping(monitor='val_loss',
                           min_delta=0,
-                          patience=5,
+                          patience=2,
                           verbose=0,
                           mode='auto')
     tensorboard = TensorBoard(log_dir=path_to_tensorboard, update_freq=200)
     print(model.summary())
     history = model.fit_generator(generator=generator_train,
-                                  steps_per_epoch=500, #number_of_set_train, 
+                                  steps_per_epoch=number_of_set_train, #500
                                   epochs=num_epochs,
                                   validation_data=generator_val, 
-                                  validation_steps=200, #number_of_set_val, 
+                                  validation_steps=number_of_set_val, #200
                                   callbacks=[checkpointer, early, tensorboard])
 
 if __name__ == '__main__':
