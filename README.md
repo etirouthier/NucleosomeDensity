@@ -33,8 +33,7 @@ An already trained model is available for prediction. It was trained on all the 
 
 - **Converting the fasta file:**
 
-```NucleosomeDensity$ >>> python fasta_reader.py -d Programme/seq_chr_sacCer3/NewGenome -o ~/NucleosomeDensity/Programme/seq_chr_sacCer3/NewGenome
-```
+```NucleosomeDensity$ >>> python fasta_reader.py -d Programme/seq_chr_sacCer3/NewGenome -o ~/NucleosomeDensity/Programme/seq_chr_sacCer3/NewGenome```
 
 - **-d:** the path to the directory where the fasta file are stored.
 
