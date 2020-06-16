@@ -1,21 +1,15 @@
 # NucleosomeDensity
 Predict the nucleosome density in yeast with deep neural network.
 
-This project is aimed at predicting the nucleosome lanscape in yeast from the DNA sequence. 
-We train a convolutional neural network to do so.
-We apply a rolling window to the DNA sequence (window length : 2001 bp) and we try to predict the nucleosome occupancy 
-at the center nucleotid (another way called seq2seq is to predict direclty the nucleosome landscape at 
-every position of the window). The DNA sequence is turned into a vector wit a one-hot-encoding and passed as input of the CNN model.
+This project is aimed at using a convolutional network (CNN) to predict the nucleosome density in yeast using the DNA sequence as input. The CNN is used to make the link between a 2001 bp long window of DNA and the nucleosome density at the center of the window. The DNA window is turned into a one-hot-encoded vector. With a trained model in hand it is possible to predict the effect of a mutation or the nucleosome density on an artificially designed DNA casset.
 
-The training is made on the 15 first chromosomes of S.cerevisiae and the prediction are made on its 16th. We want also to be able to
-predict the effect of single mutation on the nucleosome positioning. To do so we can predict the nucleosome occupancy of an 
-artificially mutated chromosome 16. In practice, every position on chromosome 16 is tested.
+An already trained model is available for prediction. It was trained on all the genome with the chromosome 16 being excluded. 
 
 ### How to use this project to train a neural net ?
 
 - **Training a model:**
 
-NucleosomeDensity/Programme$ >>> python training.py -d DNA_directory -f nuc_occupancy_file.csv -o output_name -m model_name -s -z
+```NucleosomeDensity/Programme$ >>> python training.py -d DNA_directory -f nuc_occupancy_file.csv -o output_name -m model_name -s -z -ds -t 1 2 3 -v 4```
 
 - **Predicting with a model:**
 
