@@ -98,7 +98,7 @@ def main(command_line_arguments=None):
                                        'mae_cor' : mae_cor})
     if not args.start:
         pred(['--weight_file', os.path.basename(args.model), '--directory',
-              args.directory, '--file', 'proba_in_vivo.csv',
+              args.directory,
               '--model', 'cnn', '--test', args.chromosome])
 
     y_pred = np.load(os.path.join(path_to_program,

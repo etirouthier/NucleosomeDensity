@@ -41,7 +41,7 @@ def one_hot_encoder(nucleotid):
         returns:
             res: the array one-hot-encoded, shape=(len, 4)
     """
-    res = (np.arange(nucleotid.max()) == nucleotid[..., None]-1).astype(int)
+    res = (np.arange(4) == nucleotid[..., None]-1).astype(int)
     res = res.reshape(res.shape[0], 4)
     return res
 

@@ -74,7 +74,7 @@ def load_data(seq2seq=False, args=None):
     f = h5py.File(path_to_file, "r")
     nucleotid = np.array(f["data"])
     f.close()
-    
+
     if args.reversed_seq:
         nucleotid[nucleotid == 1] = 5
         nucleotid[nucleotid == 2] = 6
@@ -89,11 +89,6 @@ def load_data(seq2seq=False, args=None):
 
     X_one_hot = (np.arange(nucleotid.max()) == nucleotid[..., None] - 1).astype(int)
     X_ = X_one_hot.reshape(X_one_hot.shape[0], X_one_hot.shape[1] * X_one_hot.shape[2])
-
-    proba_files = [
-        os.path.join(os.path.dirname(__file__), "Start_data", file_name)
-        for file_name in args.file
-    ]
 
     if seq2seq:
         _, output_len = model_dictionary()[args.model]
