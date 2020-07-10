@@ -9,6 +9,10 @@ try:
     from keras import backend as K
 except ModuleNotFoundError:
     from tensorflow.keras import backend as K
+import keras.backend as K
+import tensorflow as tf
+from keras.layers import Conv1D, Input, Lambda, Reshape
+from keras.models import Model
 
 
 def correlate(y_true, y_pred):
@@ -156,38 +160,3 @@ def MCC(y_true, y_pred):
      denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     
      return numerator / (denominator + K.epsilon())
-    
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

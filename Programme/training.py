@@ -59,7 +59,7 @@ def prepare_session():
     config.gpu_options.allow_growth = True  
     config.log_device_placement = True 
     sess = tf.Session(config=config)
-    K.tensorflow_backend.set_session(sess) 
+    K.tensorflow_backend.set_session(sess)
 
 def main():
     args = parse_arguments()

@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 
 from keras.models import load_model
 from scipy.stats import pearsonr
+import keras.backend as K
+import tensorflow as tf
 
 
 from MyModuleLibrary.array_modifier import rolling_window
@@ -105,7 +107,15 @@ def load_data(seq2seq=False, args=None):
 
     return X_
 
+def prepare_session():
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True  
+    config.log_device_placement = True 
+    sess = tf.Session(config=config)
+    K.tensorflow_backend.set_session(sess) 
+
 def main(command_line_arguments=None):
+    prepare_session()
     arguments = parse_arguments(args=command_line_arguments)
     results_path = os.path.join(os.path.dirname(__file__), "../Results_nucleosome")
 
