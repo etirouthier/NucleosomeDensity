@@ -50,8 +50,8 @@ def parse_arguments():
                         help='''list of chromosome in the validation set''')
     parser.add_argument('-p', '--pourcentage',
                         help='''pourcentage of the training data to be included''')
-    parser.add_argument('--fft', action='store_true',
-                        help="""Weither or not to apply an fft transform of the target""")
+    parser.add_argument('-k', default=1,
+                        help="""Size of the k-mers of DNA to use as input""")
     return parser.parse_args()
 
 def prepare_session():
@@ -93,12 +93,12 @@ def main():
                                                      args.seq2seq,
                                                      args.downsampling,
                                                      args.pourcentage,
-                                                     args.fft)
+                                                     args.k)
         model.compile(optimizer='adam', loss=mae_cor,
                       metrics=['mse', correlate],
                       sample_weight_mode='temporal')
     else:
-        model = model_dictionary(num_classes)[args.model]
+        model = model_dictionary(num_classes, int(args.k))[args.model]
         generator_train, number_of_set_train, \
         generator_val, number_of_set_val = generator(path_to_directory,
                                                      path_to_file,
@@ -110,7 +110,7 @@ def main():
                                                      args.seq2seq,
                                                      args.downsampling,
                                                      args.pourcentage,
-                                                     args.fft)
+                                                     args.k)
 
         model.compile(optimizer='adam',
                       loss=mae_cor,

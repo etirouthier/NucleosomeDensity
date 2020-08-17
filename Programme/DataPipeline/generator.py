@@ -10,6 +10,7 @@ import numpy as np
 import h5py
 import os
 import pandas as pd
+import itertools
 import scipy
 from MyModuleLibrary.array_modifier import reorganize_random_multi_array, rolling_window
 
@@ -192,6 +193,17 @@ def _calculate_rolling_mean(x, batch_size, sample_len, output_len, num_classes):
     x = np.swapaxes(x, 0, 1)
     return x
 
+def nmer_patch(nucleotid_, window, n):
+    nucleotid_ = rolling_window(nucleotid_ - 1, window=n)
+
+    weights = [pow(4, i) for i in range(n)]
+    nucleotid_ = np.average(nucleotid_, weights=weights, axis=1) * sum(weights)
+
+    X_one_hot = (np.arange(pow(4, n)) == nucleotid_[...,None]).astype(int)
+    _X_ = np.zeros((window, 1, pow(4, n)))
+    _X_[(n - 1) // 2 : - (n // 2), 0] = X_one_hot
+    return _X_
+
 def generator(path_to_directory,
               paths,
               train_chr,
@@ -202,7 +214,7 @@ def generator(path_to_directory,
               seq2seq=False,
               downsampling=False,
               pourc=None,
-              fft=False):
+              n=1):
     """
         Creates two keras data generator for the train set and the validation 
         set.
@@ -226,8 +238,8 @@ def generator(path_to_directory,
         :param val_chr: same for validation
         :param pourc: pourcentage of the data to be included
         :type pourc: int or None
-        :param fft: applying an fft transform to the target
-        :type fft: boolean
+        :param n: size of the n-mers of DNA to use as input.
+        :type n: interger
         
         :Example:
     
@@ -298,15 +310,19 @@ def generator(path_to_directory,
             for num in range(0, number_of_set) :
 
                 positions_ = position[num*length : (num + 1) * length]
-                X_ = np.zeros((positions_.shape[0], window, 1, 4))
+                X_ = np.zeros((positions_.shape[0], window, 1, pow(4, int(n))))
                 #X_ = np.zeros((positions_.shape[0], window ,4))
 
-                for i in range(0, positions_.shape[0]) :
+                for i in range(len(positions_)):
                     nucleotid_ = nucleotid[positions_[i] - half_wx : positions_[i] + half_wx + (window % 2)]
-                    nucleotid_ = nucleotid_.reshape(nucleotid_.shape[0],1)
-                    X_one_hot = (np.arange(4) == nucleotid_[...,None]-1).astype(int)
-                    _X_ = X_one_hot.reshape(X_one_hot.shape[0], 1, X_one_hot.shape[1] * X_one_hot.shape[2])
-                    #_X_ = X_one_hot.reshape(X_one_hot.shape[0], X_one_hot.shape[1] * X_one_hot.shape[2])
+                    if int(n) > 1:
+                        
+                        _X_ = nmer_patch(nucleotid_, window, int(n))
+                    else:
+                        nucleotid_ = nucleotid_.reshape(nucleotid_.shape[0], 1)
+                        X_one_hot = (np.arange(4) == nucleotid_[...,None]-1).astype(int)
+                        _X_ = X_one_hot.reshape(X_one_hot.shape[0], 1, X_one_hot.shape[1] * X_one_hot.shape[2])
+                        #_X_ = X_one_hot.reshape(X_one_hot.shape[0], X_one_hot.shape[1] * X_one_hot.shape[2])
                     X_[i] = _X_
 
                 if seq2seq and not downsampling:
@@ -335,11 +351,7 @@ def generator(path_to_directory,
                     y = proba[positions_]
                     w = weights[positions_]
                     y = y.reshape(y.shape[0], num_classes)
-                if fft:
-                    y = np.concatenate([scipy.fft(y[:, i]).reshape((-1, 1)) for i in range(num_classes)], axis=1)
-                    yield X_, y
-                else:
-                    yield X_, y, w
+                yield X_, y, w
         
     return generator_function(positions_train,
                               nucleotid_train,

@@ -21,6 +21,7 @@ from MyModuleLibrary.array_modifier import rolling_window
 from MyModuleLibrary.mykeras.losses import correlate, mae_cor
 from prediction import main as pred
 
+
 def _makebatch(nuc_seq, pos, mutation, window):    
     local_seq = np.copy(nuc_seq)
     

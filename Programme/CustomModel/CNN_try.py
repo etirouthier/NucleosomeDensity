@@ -11,29 +11,22 @@ from keras.layers import Dropout, Flatten, BatchNormalization, Activation
 from keras.layers import Dense, Conv2D, MaxPooling2D
 
 
-def cnn_try(num_classes=1):
+def cnn_try(num_classes=1, n=1):
     """
     """
     window = 2001
 
     fashion_model = Sequential()
 
-    fashion_model.add(Conv2D(32, kernel_size=(20, 1),
-                             activation='exponential',
-                             input_shape=(window, 1, 4),
-                             padding='same'))
-    fashion_model.add(MaxPooling2D((2,1),padding='same'))
-    fashion_model.add(BatchNormalization())
-    fashion_model.add(Dropout(0.2))
-
-    fashion_model.add(Conv2D(16, kernel_size=(5,1),
+    fashion_model.add(Conv2D(16, kernel_size=(8, 1),
                              activation='relu',
+                             input_shape=(window, 1, 4**n),
                              padding='same'))
     fashion_model.add(MaxPooling2D((2,1),padding='same'))
     fashion_model.add(BatchNormalization())
     fashion_model.add(Dropout(0.2))
 
-    fashion_model.add(Conv2D(8, kernel_size=(5,1),
+    fashion_model.add(Conv2D(8, kernel_size=(80, 1),
                              activation='relu',
                              padding='same'))
     fashion_model.add(MaxPooling2D((2,1),padding='same'))

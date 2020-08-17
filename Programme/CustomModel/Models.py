@@ -14,7 +14,7 @@ from CustomModel.CNN_seq2seq_model import cnn_seq2seq_model as cnn_seq2seq
 from CustomModel.CNN_try import cnn_try
 
 
-def model_dictionary(num_classes=1):
+def model_dictionary(num_classes=1, n=1):
     """
         Dictionary used to import the several model with parse arguments.
     """
@@ -22,4 +22,4 @@ def model_dictionary(num_classes=1):
             'cnn_lstm': cnn_lstm(num_classes),
             'cnn_dilated': cnn_dilated(num_classes),
             'cnn_deep': cnn_deep(num_classes),
-            'cnn_seq2seq' : cnn_seq2seq(num_classes), 'cnn_try': cnn_try()}
+            'cnn_seq2seq' : cnn_seq2seq(num_classes), 'cnn_try': cnn_try(num_classes, n)}

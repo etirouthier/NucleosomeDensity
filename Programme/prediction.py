@@ -51,6 +51,11 @@ def parse_arguments(args=None):
                         (only is seq2seq model)""",
     )
     parser.add_argument(
+        "-k",
+        default=1,
+        help="""Size of the kmers in input""",
+    )
+    parser.add_argument(
         "--test",
         default="16",
         help="""chromosome on which to make prediction
@@ -59,6 +64,22 @@ def parse_arguments(args=None):
     parser.add_argument('-r', '--reversed_seq', action='store_true',
                         help='In order to predict the backward strand')
     return parser.parse_args(args)
+
+def nmer_patch(nucleotid, n):
+    nucleotid = nucleotid[:, 0]
+    nucleotid_ = rolling_window(nucleotid - 1, window=n)
+
+    weights = [pow(4, i) for i in range(n)]
+    nucleotid_ = np.average(nucleotid_, weights=weights, axis=1) * sum(weights)
+
+    X_one_hot = (np.arange(pow(4, n)) == nucleotid_[...,None]).astype(int)
+    
+    if n == 1:
+        return X_one_hot
+    else:
+        _X_ = np.zeros((len(nucleotid), pow(4, n)))
+        _X_[(n  - 1) // 2 : - (n // 2)] = X_one_hot
+        return _X_
 
 def load_data(seq2seq=False, args=None):
     window = 2001
@@ -88,19 +109,20 @@ def load_data(seq2seq=False, args=None):
         nucleotid[nucleotid == 8] = 3
 
         nucleotid = nucleotid[::-1]
+        
+    n = int(args.k)
 
-    X_one_hot = (np.arange(nucleotid.max()) == nucleotid[..., None] - 1).astype(int)
-    X_ = X_one_hot.reshape(X_one_hot.shape[0], X_one_hot.shape[1] * X_one_hot.shape[2])
+    X_ = nmer_patch(nucleotid, n)
 
     if seq2seq:
         _, output_len = model_dictionary()[args.model]
 
-        X_slide = rolling_window(X_, window=(window, 4), asteps=(output_len, 4))
+        X_slide = rolling_window(X_, window=(window, pow(4, n)), asteps=(output_len, pow(4, n)))
         X_ = X_slide.reshape(X_slide.shape[0], X_slide.shape[2], 1, X_slide.shape[3])
         windows_num = len(X_slide)
 
     else:
-        X_slide = rolling_window(X_, window=(window, 4))
+        X_slide = rolling_window(X_, window=(window, pow(4, n)))
         X_ = X_slide.reshape(X_slide.shape[0], X_slide.shape[2], 1, X_slide.shape[3])
         output_len = 1
         windows_num = 1
@@ -115,7 +137,7 @@ def prepare_session():
     K.tensorflow_backend.set_session(sess) 
 
 def main(command_line_arguments=None):
-    prepare_session()
+    #prepare_session()
     arguments = parse_arguments(args=command_line_arguments)
     results_path = os.path.join(os.path.dirname(__file__), "../Results_nucleosome")
 
