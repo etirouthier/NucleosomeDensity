@@ -3,7 +3,7 @@ Predict the nucleosome density in yeast with deep neural network.
 
 This project is aimed at using a convolutional network (CNN) to predict the nucleosome density in yeast using the DNA sequence as input. The CNN is used to make the link between a 2001 bp long window of DNA and the nucleosome density at the center of the window. The DNA window is turned into a one-hot-encoded vector. With a trained model in hand it is possible to predict the effect of a mutation or the nucleosome density on an artificially designed DNA casset.
 
-An already trained model is available for prediction. It was trained on all the genome with the chromosome 16 being excluded. 
+An already trained model is available for prediction. It was trained on all the genome with the chromosome 16 being excluded. Nevertheless, for reproducibility of prediction it is prudent to train several (3) networks independently and to use them in an ensemble approach. 
 
 ### How to use this project to train a neural net ?
 
